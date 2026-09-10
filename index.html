@@ -1,18 +1,4036 @@
-<!DOCTYPE html>
-
-<html>
+﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <title>my-first-website</title>
-  <LINK href="styles.css" rel="stylesheet" type="text/css">
-</head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>大典集字坊 · 古籍集字创作</title>
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="大典集字坊" />
+<meta name="theme-color" content="#8b2522" />
+<link rel="apple-touch-icon" href="app-icon-180.png" />
+<link rel="icon" type="image/png" href="app-icon-180.png" />
+<link rel="manifest" href="manifest.json" />
+<style>
+:root {
+  --ink: #2c241b;
+  --paper: #e8dcc4;
+  --paper-dark: #d8c9a8;
+  --gold: #d4af37;
+  --gold-light: #f2d47a;
+  --cinnabar: #8b2522;
+  --cinnabar-light: #a8322e;
+  --shadow: 0 4px 16px rgba(44, 36, 27, 0.15);
+  --radius: 12px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  font-family: "PingFang SC", "Noto Serif SC", "Source Han Serif SC", "KaiTi", "STKaiti", "楷体", serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(212,175,55,0.08), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(139,37,34,0.08), transparent 40%),
+    linear-gradient(180deg, #f3ead6 0%, #e8dcc4 100%);
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* ===== Top Header ===== */
+/* W1：副标题已迁入采集页内部（工具栏正上方），Header 固定顶栏只留『大典集字坊 + 作品集按钮』，
+   顶栏高度从 124 收回到 ~74px，给内容区留出更多视觉空间。 */
+#header {
+  position: fixed; top: 0; left: 0; right: 0;
+  min-height: 74px;
+  padding: 10px 12px 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto;
+  grid-template-areas:
+    "title   action";
+  align-items: center;
+  column-gap: 10px;
+  background: linear-gradient(180deg, #2c241b 0%, #3d3226 100%);
+  color: var(--paper);
+  border-bottom: 2px solid var(--gold);
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+.app-title {
+  grid-area: title;
+  justify-self: center;
+  text-align: center;
+  font-size: clamp(26px, 6.8vw, 34px);
+  font-weight: 800;
+  letter-spacing: 6px;
+  padding-left: 6px;
+  color: var(--gold-light);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.6),
+    0 0 18px rgba(212,175,55,0.40);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.header-right {
+  grid-area: action;
+  justify-self: end;
+  align-self: center;
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+}
+/* W1：采集页内的大字副标题（置于 #collect-editor 工具栏正上方）。
+   字号保持 30~40px 大字，一行自适应；上下空白压缩到最小（padding 0+1，gap 跟着也收紧），
+   把更多空间留给古籍展示框 canvas-wrap。 */
+.collect-subtitle {
+  width: 100%;
+  overflow: hidden;
+  padding: 0 2px 1px;
+  margin: 0;
+  line-height: 1;
+}
+.collect-subtitle .app-sub {
+  color: #5a4522;
+  opacity: 0.98;
+}
+/* 原有 .app-sub & .header-sub-bar 留着不删（兼容旧 JS 仍会遍历 .app-sub），但 header 里的副标 DOM 已被移除 */
+#header .header-sub-bar { display: none !important; }
+.app-sub {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: clamp(30px, 8.4vw, 40px);
+  font-weight: 700;
+  color: var(--paper);
+  opacity: 0.92;
+  text-align: left;
+  letter-spacing: 0.6px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.btn-works {
+  background: linear-gradient(180deg, var(--gold) 0%, #b8942b 100%);
+  color: var(--ink);
+  border: none; border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+.btn-works:active { transform: translateY(1px); }
+/* Works dropdown panel */
+#works-panel {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: 280px; max-height: 60vh;
+  background: var(--paper);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px;
+  display: none;
+  overflow-y: auto;
+  z-index: 60;
+}
+#works-panel.open { display: block; }
+.works-empty {
+  text-align: center; padding: 30px 10px;
+  color: #8a7a5a; font-size: 13px;
+}
+.works-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.work-item {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--paper-dark);
+  aspect-ratio: 3 / 4;
+  cursor: pointer;
+}
+.work-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.work-item .work-del {
+  position: absolute; top: 2px; right: 2px;
+  width: 20px; height: 20px;
+  background: var(--cinnabar); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 12px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.9;
+}
+.work-item .work-label {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: rgba(44,36,27,0.75);
+  color: var(--paper);
+  font-size: 10px; padding: 2px 4px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+/* ===== Main content ===== */
+#main {
+  position: fixed;
+  top: 84px; bottom: 64px;
+  left: 0; right: 0;
+  overflow: hidden;
+}
+.page {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: none;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.page.active { display: block; }
+/* ===== Collect (采集) Module ===== */
+#collect-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%;
+  text-align: center;
+  gap: 16px;
+}
+.empty-icon {
+  width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, #fff3d4 0%, var(--paper) 70%);
+  border: 3px dashed var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 60px;
+}
+.empty-tip { font-size: 15px; color: #6a5a44; line-height: 1.6; }
+.upload-btn {
+  background: linear-gradient(180deg, var(--cinnabar) 0%, var(--cinnabar-light) 100%);
+  color: #fff; border: none; border-radius: 10px;
+  padding: 12px 28px; font-size: 16px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(139,37,34,0.3);
+}
+.upload-btn:active { transform: translateY(1px); }
+.hidden-input { display: none; }
+/* Collect editor */
+#collect-editor { display: none; flex-direction: column; height: 100%; gap: 6px; }
+.toolbar {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  background: rgba(255,255,255,0.55);
+  padding: 5px 8px; border-radius: var(--radius);
+  border: 1px solid var(--paper-dark);
+}
+.mode-group { display: flex; gap: 4px; background: #fff; padding: 3px; border-radius: 8px; border: 1px solid var(--paper-dark); }
+.mode-btn {
+  border: none; background: transparent;
+  padding: 6px 10px; font-size: 13px;
+  border-radius: 6px; color: var(--ink);
+  font-weight: 600;
+}
+.mode-btn.active {
+  background: linear-gradient(180deg, var(--gold) 0%, #b8942b 100%);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.tool-btn {
+  border: 1px solid var(--paper-dark);
+  background: #fff;
+  padding: 6px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink);
+}
+.tool-btn.danger {
+  background: #fff0ef; border-color: #e8b6b3;
+  color: var(--cinnabar);
+}
+.tool-btn:active { transform: translateY(1px); }
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  background:
+    linear-gradient(45deg, #f8f0dd 25%, transparent 25%),
+    linear-gradient(-45deg, #f8f0dd 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f8f0dd 75%),
+    linear-gradient(-45deg, transparent 75%, #f8f0dd 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-color: #efe6d0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 2px solid var(--paper-dark);
+  touch-action: none;
+}
+#collect-canvas {
+  position: absolute; inset: 0;
+  touch-action: none;
+}
+#selection-box {
+  position: absolute;
+  border: 2px dashed var(--cinnabar);
+  background: rgba(139,37,34,0.12);
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4) inset;
+}
+.mode-hint {
+  position: absolute; left: 8px; bottom: 8px;
+  background: rgba(44,36,27,0.75);
+  color: var(--paper);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  z-index: 11;
+  pointer-events: none;
+}
+/* ===== Confirm Modal ===== */
+.modal-mask {
+  position: fixed; inset: 0;
+  background: rgba(44,36,27,0.6);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+.modal-mask.open { display: flex; }
+.modal {
+  width: 100%; max-width: 340px;
+  background: var(--paper);
+  border-radius: var(--radius);
+  border: 2px solid var(--gold);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.modal-head {
+  padding: 14px 16px;
+  background: linear-gradient(180deg, var(--ink) 0%, #3d3226 100%);
+  color: var(--gold-light);
+  font-size: 16px; font-weight: 700;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-close {
+  background: transparent; border: none; color: var(--paper);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.modal-body { padding: 16px; }
+.crop-preview {
+  width: 120px; height: 120px;
+  margin: 0 auto 14px;
+  background: #fff;
+  border: 1px solid var(--paper-dark);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.crop-preview canvas { max-width: 100%; max-height: 100%; display: block; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.field label { font-size: 13px; color: #6a5a44; font-weight: 600; }
+.field input {
+  padding: 10px 12px;
+  border: 1px solid var(--paper-dark);
+  border-radius: 8px;
+  font-size: 16px;
+  background: #fffdf7;
+  outline: none;
+  color: var(--ink);
+}
+.field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,0.2); }
+.modal-foot {
+  padding: 10px 16px 16px;
+  display: flex; gap: 10px;
+}
+.modal-foot button {
+  flex: 1; padding: 11px;
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700;
+}
+.btn-cancel { background: #f0e6d2; color: var(--ink); }
+.btn-primary {
+  background: linear-gradient(180deg, var(--cinnabar) 0%, var(--cinnabar-light) 100%);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(139,37,34,0.3);
+}
+.btn-primary:disabled { opacity: 0.5; }
+/* ===== Library (字库) Module ===== */
+.lib-header {
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 12px;
+  position: sticky; top: -12px;
+  padding: 10px 0;
+  background: linear-gradient(180deg, rgba(232,220,196,1) 85%, rgba(232,220,196,0));
+  z-index: 2;
+}
+/* 排序切换胶囊：默认『🕘 最新（采集时间倒序）』+ 『🔤 拼音首字母 A→Z』 */
+.sort-pill {
+  display: inline-flex; align-items: center;
+  border-radius: 999px;
+  padding: 2px;
+  background: #f6e7b7;
+  border: 1px solid #e3c873;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.sort-pill .pill-btn {
+  border: none; background: transparent; color: #6f5312;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.sort-pill .pill-btn.active {
+  background: linear-gradient(180deg, var(--gold) 0%, #b8942b 100%);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(114,81,12,0.25);
+  text-shadow: 0 0.5px 0 rgba(0,0,0,0.18);
+}
+.search-box {
+  flex: 1;
+  display: flex; align-items: center;
+  background: #fff;
+  border: 1px solid var(--paper-dark);
+  border-radius: 20px;
+  padding: 6px 14px;
+}
+.search-box input {
+  flex: 1; border: none; background: transparent;
+  outline: none; font-size: 15px; color: var(--ink);
+}
+.search-box .ic { font-size: 16px; margin-right: 6px; opacity: 0.6; }
+.lib-btn {
+  padding: 7px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--paper-dark);
+  background: #fff;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink);
+}
+.lib-btn:active { transform: translateY(1px); }
+.lib-count {
+  text-align: center; font-size: 12px; color: #8a7a5a;
+  margin-bottom: 10px;
+}
+.char-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.char-card {
+  background: #fffdf7;
+  border: 1px solid var(--paper-dark);
+  border-radius: var(--radius);
+  padding: 10px 8px 8px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(44,36,27,0.06);
+}
+.char-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2px 6px;
+  border-bottom: 1px dashed var(--paper-dark);
+  margin-bottom: 8px;
+}
+.char-name {
+  font-size: 18px; font-weight: 700; color: var(--cinnabar);
+  letter-spacing: 2px;
+}
+.char-count { font-size: 11px; color: #8a7a5a; }
+.del-char {
+  width: 22px; height: 22px;
+  background: #fff0ef; border: 1px solid #e8b6b3;
+  color: var(--cinnabar); border-radius: 50%;
+  font-size: 12px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.variants-scroll {
+  display: flex; gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.variants-scroll::-webkit-scrollbar { height: 3px; }
+.variant {
+  position: relative;
+  flex: 0 0 70px;
+  width: 70px; height: 70px;
+  background: #fff;
+  border: 1px solid var(--paper-dark);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.variant img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background:
+    linear-gradient(45deg, #faf3e1 25%, transparent 25%),
+    linear-gradient(-45deg, #faf3e1 25%, transparent 25%);
+  background-size: 10px 10px;
+}
+.del-variant {
+  position: absolute; top: 2px; right: 2px;
+  width: 18px; height: 18px;
+  background: var(--cinnabar); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 11px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.9;
+  z-index: 2;
+}
+.empty-lib {
+  text-align: center; color: #8a7a5a;
+  padding: 40px 20px; font-size: 14px;
+}
+/* ===== Create (创作) Module ===== */
+#page-create { overflow: hidden; }
+.create-wrap {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  width: 100%; height: 100%;
+  padding: 8px 0 10px;
+}
+.textarea-wrap {
+  flex: 0 0 auto;
+  background: #fffdf7;
+  border: 1px solid var(--paper-dark);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 2px 6px rgba(44,36,27,0.06);
+  margin: 0 12px;
+}
+.textarea-wrap textarea {
+  width: 100%;
+  min-height: 40px;
+  max-height: 9vh;
+  border: none; background: transparent;
+  outline: none; resize: vertical;
+  font-size: 14px; line-height: 1.5;
+  color: var(--ink);
+  font-family: inherit;
+  padding: 4px 0;
+}
+.paper-wrap {
+  flex: 0 0 auto;
+  position: relative;
+  display: flex; justify-content: center;
+  width: 100%;
+  margin: 0;
+}
+#paper {
+  width: 92%;
+  /* 宣纸高度调小一半，原 55vh → 26vh；保持视觉比例 */
+  height: 26vh;
+  min-height: 140px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(44,36,27,0.25);
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: height 0.25s ease;
+}
+/* 展开模式：临时加大宣纸高度，方便查看长文案（可见高度仍在页面内） */
+#paper.expanded { height: 46vh; }
+#paper-bg {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+#paper-content {
+  position: absolute; inset: 0;
+  /* 与参考图真实比例匹配：内边距约为纸面短边 12%，保证字不压金边/祥云/冰裂纹 */
+  padding: clamp(38px, 12vmin, 160px) clamp(34px, 11.5vmin, 150px);
+  /* 注意：必须允许子元素接收指针，否则逐字点击 / 拖拽无法触发
+     pointer-events: auto 只作用于容器本身（纸空白处点击取消选中），单字本身也是 pointer-events:auto */
+  pointer-events: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* 宣纸右下角展开/收起按钮 */
+.paper-toggle {
+  position: absolute;
+  right: calc(4% + 6px);
+  bottom: 4px;
+  z-index: 5;
+  background: rgba(44,36,27,0.78);
+  color: var(--gold-light);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  display: none;
+  white-space: nowrap;
+}
+.paper-toggle.show { display: inline-flex; align-items: center; gap: 4px; }
+.paper-toggle:active { transform: translateY(1px); }
+/* Backgrounds
+   回退版本：xuan / xuanwhite 全部使用 CSS 自绘（渐变 + 帘纹纤维斑 + 四角祥云 SVG + 双线金边/白边 + 撒金/冰裂覆盖层）
+   不再参考用户上传的真实宣纸图；只有 custom 继续用注入的 <img class="paper-bg-img"> 做 object-fit cover。
+*/
+.bg-xuan {
+  position: relative;
+  overflow: hidden;
+  /* 1) 米黄多层渐变晕染底 */
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,244,214,0.85) 0%, rgba(255,244,214,0) 62%),
+    radial-gradient(circle at 14% 12%, rgba(222,178,108,0.42) 0%, rgba(222,178,108,0) 58%),
+    radial-gradient(circle at 86% 88%, rgba(206,152,82,0.32) 0%, rgba(206,152,82,0) 60%),
+    radial-gradient(circle at 86% 10%, rgba(216,166,90,0.22) 0%, rgba(216,166,90,0) 55%),
+    radial-gradient(circle at 14% 90%, rgba(216,166,90,0.22) 0%, rgba(216,166,90,0) 55%),
+    linear-gradient(135deg, #faecc6 0%, #f4dca3 48%, #eccb83 100%);
+  background-blend-mode: normal, normal, normal, normal, normal, normal;
+  /* 2) 双层金边（外细 + 内粗 + 柔化 inset，和 drawDoubleGoldFrame 同节奏） */
+  box-shadow:
+    0 0 0 2px #9c7118,
+    0 0 0 9px #f0c557,
+    0 0 0 11px rgba(156,113,24,0.8),
+    inset 0 0 0 1px rgba(255,255,255,0.35),
+    inset 0 0 40px 6px rgba(216,170,88,0.18);
+  border-radius: 2px;
+}
+/* ::before —— 帘纹竖线 + 纤维散斑 */
+.bg-xuan::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image:
+    /* 纤维散斑（确定性小格 noise，比 canvas 弱） */
+    radial-gradient(circle at 12% 24%, rgba(155,105,45,0.14) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 68% 82%, rgba(155,105,45,0.10) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 40% 60%, rgba(135,90,30,0.18) 0 0.6px, transparent 1.0px),
+    radial-gradient(circle at 80% 30%, rgba(135,90,30,0.14) 0 0.6px, transparent 1.0px),
+    /* 帘纹：repeating-linear-gradient 每隔 6px 画 1px 极淡竖线 */
+    repeating-linear-gradient(90deg,
+      rgba(140,100,45,0.06) 0 1px,
+      transparent 1px 6px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  mix-blend-mode: multiply;
+  opacity: 0.95;
+}
+/* ::after —— 四角祥云 SVG + 外围渐晕 */
+.bg-xuan::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  /* 四角祥云：右上/左下 粗实祥云，左上/右下 淡祥云 */
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMaxYMin meet'><g fill='none' stroke='%23c7992a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'><path d='M195 38 q 16 -18 40 -10 q 10 4 8 18 q -2 10 -14 14 q -14 3 -26 -4 q 12 14 -4 20 q -14 6 -28 -6 q -4 -4 2 -8 q -14 -2 -12 -16 q 1 -9 10 -12 q 4 -1 6 2 q 6 -14 18 -18 z'/><path d='M218 92 q 14 -16 34 -12 q 8 2 10 12 q 1 8 -9 12 q -14 4 -26 -2 q 12 12 -6 18 q -12 4 -24 -6' opacity='0.85'/><path d='M150 62 q 10 -10 26 -4 q 10 4 6 16 q -3 8 -18 10 q -14 0 -20 -10 q 12 10 -6 12 q -10 0 -10 -12' opacity='0.8'/></g></svg>") no-repeat right -4px top -12px / 44% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMinYMax meet'><g fill='none' stroke='%23c7992a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.95'><path d='M60 162 q -18 -12 -44 -6 q -10 4 -8 16 q 2 10 14 12 q 16 2 28 -8 q -12 16 6 20 q 14 2 26 -10 q 4 -4 -2 -8 q 14 -2 10 -16 q -2 -10 -12 -12 q -4 0 -6 2 q -6 -14 -18 -18 z'/><path d='M38 108 q -14 -16 -34 -12 q -8 2 -10 12 q -1 8 9 12 q 14 4 26 -2 q -12 12 6 18 q 12 4 24 -6' opacity='0.85'/><path d='M110 138 q -10 -10 -26 -4 q -10 4 -6 16 q 3 8 18 10 q 14 0 20 -10 q -12 10 6 12 q 10 0 10 -12' opacity='0.8'/></g></svg>") no-repeat left -4px bottom -12px / 44% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMinYMin meet'><g fill='none' stroke='%23c7992a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'><path d='M58 42 q 14 -18 38 -10 q 10 4 8 18 q -2 10 -14 14 q -14 3 -26 -4 q 12 14 -4 20 q -14 6 -28 -6 q -4 -4 2 -8 q -14 -2 -12 -16 q 1 -9 10 -12 q 4 -1 6 2 z'/></g></svg>") no-repeat left -10px top -10px / 32% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMaxYMax meet'><g fill='none' stroke='%23c7992a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'><path d='M196 158 q -14 -18 -38 -10 q -10 4 -8 18 q 2 10 14 14 q 14 3 26 -4 q -12 14 4 20 q 14 6 28 -6 q 4 -4 -2 -8 q 14 -2 12 -16 q -1 -9 -10 -12 q -4 -1 -6 2 z'/></g></svg>") no-repeat right -10px bottom -10px / 32% auto,
+    /* 外围柔化渐晕（和 canvas edgeVignette 一致） */
+    radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 52%, rgba(85,55,10,0.22) 100%);
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 1;
+}
+.bg-xuan > * { position: relative; z-index: 1; }
 
+/* 宣纸 · 米白（祥云冰裂版，代码自绘） */
+.bg-xuanwhite {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,248,0.85) 0%, rgba(255,255,248,0) 62%),
+    radial-gradient(circle at 16% 10%, rgba(230,214,176,0.22) 0%, rgba(230,214,176,0) 55%),
+    radial-gradient(circle at 84% 90%, rgba(220,200,160,0.20) 0%, rgba(220,200,160,0) 55%),
+    linear-gradient(135deg, #faf8f1 0%, #f4efe1 50%, #ece4cd 100%);
+  /* 双描白边（外亮白 1px + 内金米 4px + inset 柔化） */
+  box-shadow:
+    0 0 0 1px #ffffff,
+    0 0 0 5px #efe4c6,
+    0 0 0 6px rgba(180,160,120,0.7),
+    inset 0 0 0 1px rgba(255,255,255,0.9),
+    inset 0 0 36px 4px rgba(220,200,160,0.22);
+  border-radius: 2px;
+}
+/* ::before —— 帘纹竖线 + 纤维散斑 */
+.bg-xuanwhite::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 18% 36%, rgba(160,130,75,0.08) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 72% 70%, rgba(160,130,75,0.06) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 48% 54%, rgba(150,120,70,0.12) 0 0.6px, transparent 1.0px),
+    radial-gradient(circle at 82% 26%, rgba(150,120,70,0.10) 0 0.6px, transparent 1.0px),
+    repeating-linear-gradient(90deg,
+      rgba(180,160,120,0.045) 0 1px,
+      transparent 1px 7px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+/* ::after —— 四角淡祥云 SVG + 冰裂纹 SVG 覆盖 + 柔晕 */
+.bg-xuanwhite::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    /* 四角淡祥云（金米调） */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMaxYMin meet'><g fill='none' stroke='%23bfa774' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.6'><path d='M195 38 q 16 -18 40 -10 q 10 4 8 18 q -2 10 -14 14 q -14 3 -26 -4 q 12 14 -4 20 q -14 6 -28 -6 q -4 -4 2 -8 q -14 -2 -12 -16 q 1 -9 10 -12 q 4 -1 6 2 q 6 -14 18 -18 z'/></g></svg>") no-repeat right -4px top -12px / 44% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMinYMax meet'><g fill='none' stroke='%23bfa774' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.6'><path d='M60 162 q -18 -12 -44 -6 q -10 4 -8 16 q 2 10 14 12 q 16 2 28 -8 q -12 16 6 20 q 14 2 26 -10 q 4 -4 -2 -8 q 14 -2 10 -16 q -2 -10 -12 -12 q -4 0 -6 2 q -6 -14 -18 -18 z'/></g></svg>") no-repeat left -4px bottom -12px / 44% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMinYMin meet'><g fill='none' stroke='%23bfa774' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.38'><path d='M58 42 q 14 -18 38 -10 q 10 4 8 18 q -2 10 -14 14 q -14 3 -26 -4 q 12 14 -4 20 q -14 6 -28 -6 q -4 -4 2 -8 q -14 -2 -12 -16 q 1 -9 10 -12 q 4 -1 6 2 z'/></g></svg>") no-repeat left -10px top -10px / 32% auto,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 200' preserveAspectRatio='xMaxYMax meet'><g fill='none' stroke='%23bfa774' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.38'><path d='M196 158 q -14 -18 -38 -10 q -10 4 -8 18 q 2 10 14 14 q 14 3 26 -4 q -12 14 4 20 q 14 6 28 -6 q 4 -4 -2 -8 q 14 -2 12 -16 q -1 -9 -10 -12 q -4 -1 -6 2 z'/></g></svg>") no-repeat right -10px bottom -10px / 32% auto,
+    /* 全幅冰裂纹覆盖（确定性路径，浅金米） */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600' preserveAspectRatio='none'><g fill='none' stroke='%23b8a06a' stroke-width='0.65' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'><path d='M40 200 L180 120 L300 170 L460 80 L560 130'/><path d='M180 120 L230 240 L300 170 L360 300 L460 80 L500 220 L560 130'/><path d='M40 400 L150 320 L230 240 L340 380 L420 290 L500 220 L580 360'/><path d='M80 520 L220 460 L340 380 L450 480 L570 520'/><path d='M60 80 L140 220 L80 330 L220 460 L360 420 L480 560'/><path d='M300 170 L260 80 L420 80 L460 190 L360 300 L420 430 L300 540 L180 460 L230 330 L150 260 L300 170 Z'/></g></svg>") no-repeat center / 100% 100%,
+    /* 外围柔晕 */
+    radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 55%, rgba(110,90,55,0.18) 100%);
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 1;
+}
+.bg-xuanwhite > * { position: relative; z-index: 1; }
+
+/* 上传背景图 · 用户自定义：xuan/xuanwhite 不再注入 img，只有 custom 才会用 */
+.bg-custom {
+  position: relative;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+.bg-custom .paper-bg-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* 自定义背景上加一层极薄米白遮罩，避免字图对比度不足 */
+.bg-custom::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,252,240,0.10) 0%, rgba(255,252,240,0.00) 100%);
+  pointer-events: none;
+}
+/* xuan/xuanwhite 即使 DOM 里残留旧 paper-bg-img（切背景竞态）也要隐藏，避免遮挡自绘 */
+.bg-xuan .paper-bg-img,
+.bg-xuanwhite .paper-bg-img { display: none !important; }
+
+/* Character on paper */
+.paper-char {
+  position: absolute;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  /* 交互友好：点击有手形；手机端屏蔽系统滚动/缩放手势（交给 pointer 状态机） */
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* 兜底：保证字本身能接收 pointer 事件，不因父容器 CSS 链被意外屏蔽 */
+  pointer-events: auto;
+  transition: box-shadow 120ms ease;
+}
+.paper-char img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.paper-char.royal-text { color: var(--gold-light); }
+/* Controls - 紧凑 + 创作页固定位置 */
+.controls {
+  flex: 1 1 auto;
+  min-height: 0; /* 允许收缩，以便把所有控件放入主可视区 */
+  background: #fffdf7;
+  border: 1px solid var(--paper-dark);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 0 12px;
+  display: flex; flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 2px 6px rgba(44,36,27,0.06);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ctrl-row {
+  display: flex; flex-direction: column;
+  gap: 2px;
+}
+.ctrl-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: #5a4d38; font-weight: 600;
+  line-height: 1.2;
+}
+.ctrl-label .v { color: var(--cinnabar); font-size: 11px; }
+.ctrl-row input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold) var(--val,50%), var(--paper-dark) var(--val,50%));
+  outline: none;
+  margin: 1px 0 0;
+}
+.ctrl-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--cinnabar) 0%, var(--cinnabar-light) 100%);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+.ctrl-row input[type=range]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--cinnabar);
+  border: 2px solid #fff;
+}
+/* ===== 自定义背景 · 历史上传小按钮 / 面板 ===== */
+.btn-bg-history {
+  align-self: stretch;
+  padding: 3px 4px;
+  min-height: 38px;
+  border: 1px dashed var(--gold);
+  background: #fff4d0;
+  color: #8a6a15;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.4px;
+}
+.btn-bg-history:active { background: #f7e6a9; }
+.ctrl-group[data-role="bg"] {
+  grid-template-columns: repeat(3, 1fr) auto;
+  column-gap: 5px;
+  row-gap: 5px;
+}
+.bg-history-panel {
+  margin: 6px 0 2px;
+  border: 1px solid var(--gold);
+  background: #fff8e0;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.bg-history-panel[hidden] { display: none; }
+.bg-history-head {
+  display: flex; justify-content: space-between; align-items: center;
+  color: #7a5e12; font-size: 12px; margin-bottom: 6px;
+}
+.bg-history-head > div { display: flex; gap: 5px; }
+.btn-mini {
+  border: 1px solid var(--gold);
+  background: #fff6dd;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  color: #7c5d12;
+  font-weight: 700;
+}
+.btn-mini:active { background: #f3e1a7; }
+.bg-history-empty {
+  color: #9a8152;
+  font-size: 11px;
+  text-align: center;
+  padding: 10px 0;
+}
+.bg-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px;
+}
+.bg-history-cell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid rgba(140,100,45,0.35);
+  background: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.bg-history-cell.latest {
+  border-color: var(--cinnabar);
+  box-shadow: 0 0 0 2px rgba(139,37,34,0.14);
+}
+.bg-history-cell img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  pointer-events: none; -webkit-user-drag: none;
+}
+.bg-history-cell .del {
+  position: absolute;
+  top: 1px; right: 1px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  line-height: 16px; font-size: 13px;
+  padding: 0;
+  cursor: pointer;
+}
+.bg-history-cell .tag {
+  position: absolute;
+  left: 2px; bottom: 2px;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.btn-group {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;
+}
+.btn-group-3 { grid-template-columns: repeat(3, 1fr); }
+.toggle-btn {
+  padding: 5px 3px;
+  border: 1px solid var(--paper-dark);
+  background: #fff;
+  border-radius: 7px;
+  font-size: 12px; font-weight: 600;
+  color: var(--ink);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px;
+  line-height: 1.15;
+}
+.toggle-btn .sm { font-size: 9px; color: #8a7a5a; font-weight: 500; }
+.toggle-btn.active {
+  background: linear-gradient(180deg, var(--gold) 0%, #b8942b 100%);
+  color: #fff; border-color: #a88620;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-btn.active .sm { color: #fff; opacity: 0.85; }
+.action-row {
+  display: flex; gap: 8px;
+  margin-top: 1px;
+}
+.action-row button {
+  flex: 1; padding: 9px;
+  border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+}
+.action-row .btn-save {
+  background: linear-gradient(180deg, #5a4d38 0%, #3d3226 100%);
+  color: var(--paper);
+}
+.action-row .btn-download {
+  background: linear-gradient(180deg, var(--cinnabar) 0%, var(--cinnabar-light) 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(139,37,34,0.3);
+}
+.action-row button:active { transform: translateY(1px); }
+
+/* ===== 通用小间距工具 ===== */
+.mt6 { margin-top: 6px; }
+/* ===== Bottom Navigation ===== */
+#bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: 78px;   /* 图标 + lbl 都加大，导航条高度加厚 ~78px，底部不挤压 lbl */
+  background: linear-gradient(180deg, #fff9ed 0%, var(--paper) 100%);
+  border-top: 2px solid var(--gold);
+  display: flex;
+  z-index: 50;
+  box-shadow: 0 -3px 16px rgba(44,36,27,0.15);
+  padding: 4px 2px 0;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 2px);
+}
+.nav-tab {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  background: transparent; border: none;
+  color: #8a7a5a;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-tab .icon { font-size: 34px; line-height: 1; }
+.nav-tab .lbl {
+  font-size: 15px; font-weight: 800;
+  letter-spacing: 2.5px;
+  color: inherit;
+}
+.nav-tab.active {
+  color: var(--cinnabar);
+}
+.nav-tab.active .icon {
+  filter: drop-shadow(0 1.5px 2.5px rgba(139,37,34,0.38));
+  transform: translateY(-1px) scale(1.04);
+}
+.nav-tab.active::before {
+  content: "";
+  position: absolute; top: 0;
+  width: 52px; height: 3.5px;
+  background: linear-gradient(90deg, var(--cinnabar-light) 0%, var(--cinnabar) 100%);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 6px rgba(139,37,34,0.25);
+}
+.nav-tab { position: relative; }
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  left: 50%; top: 40%;
+  transform: translate(-50%, -50%);
+  background: rgba(44,36,27,0.9);
+  color: var(--paper);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 14px;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+/* Scrollbar subtle */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(138, 122, 90, 0.4); border-radius: 2px; }
+</style>
+</head>
 <body>
 
-<img src="https://octodex.github.com/images/daftpunktocat-thomas.gif" id="octocat" alt="octocat-gif" />
+<!-- ============ HEADER ============ -->
+<header id="header">
+  <span class="app-title">大典集字坊</span>
+  <div class="header-right">
+    <button class="btn-works" id="btn-works">作品集</button>
+    <div id="works-panel">
+      <div id="works-grid" class="works-grid"></div>
+      <div id="works-empty" class="works-empty">暂无作品<br/>去创作页保存吧～</div>
+    </div>
+  </div>
+</header>
 
-<!-- Change this code here by copy and pasting your template on line 15 -->
-<p>Welcome to your first GitHub Pages website!</p>
+<!-- ============ MAIN ============ -->
+<main id="main">
+  <!-- ===== Collect Page ===== -->
+  <section id="page-collect" class="page active">
+    <div id="collect-empty">
+      <div class="empty-icon">📜</div>
+      <div class="empty-tip">上传古籍图片<br/>单指移动 / 双指缩放<br/>切换到【框选剪字】单指拖拽裁剪单字</div>
+      <button class="upload-btn" id="btn-upload-trigger">📷 上传古籍图片</button>
+      <input type="file" id="file-input" accept="image/*" class="hidden-input" />
+    </div>
 
+    <div id="collect-editor">
+      <!-- W1：采集页内副标题——放在『移动/缩放工具栏』上方，字号 30~40px，一行自适应显示 -->
+      <div class="collect-subtitle" aria-label="副标题">
+        <span class="app-sub">把《永乐大典》里喜欢的字采集出来吧！</span>
+      </div>
+      <div class="toolbar">
+        <div class="mode-group" role="tablist">
+          <button class="mode-btn active" data-mode="move">✋ 移动缩放</button>
+          <button class="mode-btn" data-mode="crop">✂️ 框选剪字</button>
+        </div>
+        <button class="tool-btn" id="btn-fit" title="适应画布">🖼️ 适应</button>
+        <button class="tool-btn" id="btn-rotate">🔄 旋转</button>
+        <button class="tool-btn danger" id="btn-reset-image">🗑️ 换图</button>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="collect-canvas"></canvas>
+        <div id="selection-box"></div>
+        <div class="mode-hint" id="mode-hint">✋ 单指平移 · 双指捏合缩放</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Library Page ===== -->
+  <section id="page-library" class="page">
+    <div class="lib-header">
+      <div class="search-box">
+        <span class="ic">🔍</span>
+        <input type="search" id="lib-search" placeholder="搜索简体字 / 繁体字..." />
+      </div>
+      <div class="sort-pill" id="sort-pill" role="tablist" aria-label="字库排序">
+        <button class="pill-btn active" data-sort="added" title="采集时间倒序（最新在前）">🕘 最新</button>
+        <button class="pill-btn" data-sort="pinyin" title="按拼音首字母 A→Z">🔤 拼音</button>
+      </div>
+      <button class="lib-btn" id="btn-export-lib">📤 导出</button>
+      <button class="lib-btn" id="btn-import-lib">📥 导入</button>
+      <input type="file" id="lib-import-file" accept="application/json" class="hidden-input" />
+    </div>
+    <div class="lib-count" id="lib-count">字库共 0 字 · 0 变体</div>
+    <div id="char-grid" class="char-grid"></div>
+    <div id="lib-empty" class="empty-lib">字库空空如也～<br/>前往【采集】页面裁剪古籍单字加入字库吧！</div>
+  </section>
+
+  <!-- ===== Create Page ===== -->
+  <section id="page-create" class="page">
+    <div class="create-wrap">
+      <div class="textarea-wrap">
+        <textarea id="text-input" placeholder="请输入你心中的文案"></textarea>
+      </div>
+      <div class="paper-wrap">
+        <div id="paper">
+          <div id="paper-bg" class="bg-xuan"></div>
+          <div id="paper-content"></div>
+        </div>
+        <button id="paper-toggle" class="paper-toggle" title="展开/收起">
+          <span class="paper-toggle-ic">⬇️</span>
+          <span class="paper-toggle-text">展开</span>
+        </button>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl-group btn-group btn-group-3" data-role="bg">
+          <button class="toggle-btn active" data-bg="xuan">
+            <span>� 宣纸·米黄</span>
+            <span class="sm">传统帘纹生宣</span>
+          </button>
+          <button class="toggle-btn" data-bg="xuanwhite">
+            <span>⬜ 宣纸·米白</span>
+            <span class="sm">细腻熟宣</span>
+          </button>
+          <button class="toggle-btn" data-bg="custom" id="btn-bg-custom">
+            <span>🎨 自定义背景图</span>
+            <span class="sm" id="bg-custom-hint">点此使用</span>
+          </button>
+          <!-- 🕘 历史上传：点击打开『历史自定义背景图』选择面板（用户要求"可以是历史上传的任意图"） -->
+          <button class="btn-bg-history" id="btn-bg-history" type="button" title="历史上传背景图">🕘<span>历史</span></button>
+        </div>
+        <!-- 自定义背景图 · 历史上传选择面板（最多保留最近 20 张，可单条删除） -->
+        <div id="bg-history-panel" class="bg-history-panel" hidden>
+          <div class="bg-history-head">
+            <strong>📚 历史自定义背景图</strong>
+            <div>
+              <button type="button" class="btn-mini" id="bg-history-gc" title="清理超过 20 张的最旧条目">清理旧条目</button>
+              <button type="button" class="btn-mini" id="bg-history-close">× 关闭</button>
+            </div>
+          </div>
+          <div id="bg-history-empty" class="bg-history-empty">还没有上传过图～<br/>点🎨自定义背景图就会自动保存到这里</div>
+          <div id="bg-history-grid" class="bg-history-grid"></div>
+        </div>
+        <input type="file" id="bg-upload-file" accept="image/*" class="hidden-input" />
+
+        <div class="btn-group">
+          <button class="toggle-btn active" data-layout="h">
+            <span>↔️ 横排</span>
+            <span class="sm">从左到右</span>
+          </button>
+          <button class="toggle-btn" data-layout="v">
+            <span>↕️ 竖排</span>
+            <span class="sm">古籍·从右向左</span>
+          </button>
+        </div>
+
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>🔤 字号</span><span class="v" id="fontsize-v">32 px</span></div>
+          <input type="range" id="fontsize" min="16" max="60" value="32" />
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>↔️ 字间距</span><span class="v" id="letterspace-v">4 px</span></div>
+          <input type="range" id="letterspace" min="0" max="30" value="4" />
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label"><span>↕️ 行间距</span><span class="v" id="linespace-v">16 px</span></div>
+          <input type="range" id="linespace" min="4" max="50" value="16" />
+        </div>
+
+        <div class="action-row">
+          <button class="btn-save" id="btn-save-work">💾 保存作品</button>
+          <button class="btn-download" id="btn-download">🖼️ 下载图片</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ BOTTOM NAV ============ -->
+<nav id="bottom-nav">
+  <button class="nav-tab active" data-page="collect">
+    <span class="icon">✂️</span>
+    <span class="lbl">采集</span>
+  </button>
+  <button class="nav-tab" data-page="library">
+    <span class="icon">📚</span>
+    <span class="lbl">字库</span>
+  </button>
+  <button class="nav-tab" data-page="create">
+    <span class="icon">🎨</span>
+    <span class="lbl">创作</span>
+  </button>
+</nav>
+
+<!-- ============ CONFIRM MODAL ============ -->
+<div class="modal-mask" id="confirm-mask">
+  <div class="modal">
+    <div class="modal-head">
+      <span>✨ 确认加入字库</span>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="crop-preview"><canvas id="crop-preview-canvas"></canvas></div>
+      <div class="field">
+        <label>请输入对应的简体字 / 繁体字</label>
+        <input type="text" id="char-input" maxlength="2" placeholder="例如：永" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="modal-cancel">取消</button>
+      <button class="btn-primary" id="modal-ok">➕ 加入字库</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   大典集字坊 - 纯原生 JavaScript 单文件实现
+   ============================================================ */
+(() => {
+'use strict';
+
+// ===== Storage Keys =====
+const LS_LIB = 'ddjz_library_v1';
+const LS_CHARS = 'ddjz_chars_v1';   // W3：library 字符显序（最新→最旧）独立备份，防止 LS_LIB 过大时 chars 顺序一起丢失
+const LS_WORKS = 'ddjz_works_v1';
+const LS_LAST_CREATE = 'ddjz_last_create_v1';
+const LS_SOURCE_VIEW = 'ddjz_source_view_v1'; // 缩放/旋转/偏移
+const LS_LIB_SORT = 'ddjz_lib_sort_v1';     // 字库排序偏好：'added' | 'pinyin'
+// 拼音排序（简体中文·zh-CN）比较器：环境支持 Intl.Collator（推荐）就用 collator.compare；
+//   不支持就回退 String.prototype.localeCompare('zh-Hans-CN')；Unicode 数字字母单独排前面以稳定。
+let _pinyinCollator = null;
+function initPinyinCollator() {
+  if (_pinyinCollator) return _pinyinCollator;
+  try {
+    if (typeof Intl !== 'undefined' && typeof Intl.Collator === 'function') {
+      _pinyinCollator = new Intl.Collator('zh-Hans-CN', {
+        sensitivity: 'base',
+        usage: 'sort',
+        numeric: true,
+        caseFirst: 'lower'
+      });
+      return _pinyinCollator;
+    }
+  } catch(_) {}
+  return null;
+}
+function cmpPinyin(a, b) {
+  if (a === b) return 0;
+  const col = initPinyinCollator();
+  try {
+    if (col) return col.compare(String(a), String(b));
+    if (typeof String.prototype.localeCompare === 'function') {
+      return String(a).localeCompare(String(b), 'zh-Hans-CN', { sensitivity: 'base' });
+    }
+  } catch(_) {}
+  // 最终降级：按 UTF-16 码点排序（比死锁好）
+  return String(a) < String(b) ? -1 : 1;
+}
+
+// IndexedDB (大体积图片/作品/字库真正安全的"永久保存"容器)
+const IDB_NAME = 'ddjz_db_v1';
+const IDB_VER = 1;
+const IDB_STORE_LIB = 'library';     // key: char(char), value: { char, variants:[dataURL,...] }
+const IDB_STORE_WORKS = 'works';     // key: id(string), value: { id, ts, title, params, thumb }
+const IDB_STORE_BLOBS = 'blobs';     // key: 'lastSourceImage' ; value: { dataURL, ts }
+
+let __dbPromise = null;
+function openDB() {
+  if (__dbPromise) return __dbPromise;
+  __dbPromise = new Promise((resolve, reject) => {
+    try {
+      if (!('indexedDB' in window) || !window.indexedDB) { resolve(null); return; }
+      const req = window.indexedDB.open(IDB_NAME, IDB_VER);
+      req.onupgradeneeded = (ev) => {
+        const db = ev.target.result;
+        if (!db.objectStoreNames.contains(IDB_STORE_LIB)) db.createObjectStore(IDB_STORE_LIB, { keyPath: 'char' });
+        if (!db.objectStoreNames.contains(IDB_STORE_WORKS)) db.createObjectStore(IDB_STORE_WORKS, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(IDB_STORE_BLOBS)) db.createObjectStore(IDB_STORE_BLOBS, { keyPath: 'k' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+  return __dbPromise;
+}
+function idbPut(storeName, value) {
+  return openDB().then(db => {
+    if (!db) return false;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.onabort = () => resolve(false);
+        tx.objectStore(storeName).put(value);
+      } catch (e) { resolve(false); }
+    });
+  });
+}
+function idbGet(storeName, key) {
+  return openDB().then(db => {
+    if (!db) return null;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  });
+}
+function idbDel(storeName, key) {
+  return openDB().then(db => {
+    if (!db) return false;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.objectStore(storeName).delete(key);
+      } catch (e) { resolve(false); }
+    });
+  });
+}
+function idbClear(storeName) {
+  return openDB().then(db => {
+    if (!db) return false;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+        tx.objectStore(storeName).clear();
+      } catch (e) { resolve(false); }
+    });
+  });
+}
+function idbAll(storeName) {
+  return openDB().then(db => {
+    if (!db) return [];
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).getAll();
+        req.onsuccess = () => resolve(Array.isArray(req.result) ? req.result : []);
+        req.onerror = () => resolve([]);
+      } catch (e) { resolve([]); }
+    });
+  });
+}
+
+// ===== Global state =====
+const state = {
+  // Collect
+  image: null,          // HTMLImageElement loaded
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0,
+  rotation: 0,          // degrees (0/90/180/270)
+  mode: 'move',         // 'move' | 'crop'
+  selection: null,      // {sx, sy, cx, cy} screen coords of selection start/current
+  pendingCrop: null,    // {imgDataURL} from last crop selection, waiting for confirm
+  lastSourceDataURL: null,  // 原始上传图 dataURL，永久保存
+  userBackgroundDataURL: null, // 最后一张用户上传的自定义背景图
+
+  // Library
+  library: {},          // { char: [dataURL, dataURL,...] }
+  chars: [],            // W3：library 的字显式顺序（新字加入时 unshift 数组头 → 字库首屏最顶部）
+                        //   renderLibrary 按此顺序渲染；saveLibrary 写库时按它打 addedTs；loadLibrary 按 addedTs 倒序重建
+
+  // Create
+  createParams: {
+    text: '',
+    layout: 'h',        // 'h' horizontal | 'v' vertical (古籍：从右向左，从上向下)
+    bg: 'xuan',         // 'xuan' (宣纸·米黄) | 'xuanwhite' (宣纸·米白) | 'custom' (上传背景图)
+    fontSize: 32,
+    letterSpace: 4,
+    lineSpace: 16,
+  },
+
+  // Works
+  works: [],            // [{id, ts, title, params, thumb}]
+};
+
+// ===== 宣纸底图（回退版本：代码自绘渐变+祥云+金边/冰裂+白边/撒金）=====
+// 说明：不再依赖内嵌大图 dataURL，避免空白 / 解码不稳定。Canvas drawBackground 与 CSS 保持同一套算法。
+// ===== Utilities =====
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function showToast(msg, duration = 1800) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ==== 副标题一行自适应（绝不换行，字号自动缩小保证全可见）====
+// 布局：当前只保留『作品集前 .header-sub-bar』一份浅色副标 DOM，
+//       对它独立测量并做 transform scale，字号保持用户确认的 clamp(15~20px) 不变。
+function fitSubtitleLine() {
+  const els = $$('.app-sub');
+  if (!els || !els.length) return;
+  for (const el of els) {
+    el.style.fontSize = '';
+    el.style.transform = '';
+    el.style.transformOrigin = '';
+    el.style.letterSpacing = '';
+    const parent = el.parentElement;
+    if (!parent) continue;
+    el.style.whiteSpace = 'nowrap';
+    el.style.overflow = 'visible';
+    el.style.textOverflow = 'clip';
+    el.style.display = 'inline-block';
+    const available = parent.clientWidth - 2;
+    const natural = el.scrollWidth;
+    if (natural <= available || available <= 0) continue;
+    const ratio = Math.max(0.6, available / natural);
+    el.style.transform = `scale(${ratio})`;
+    el.style.transformOrigin = 'left center';
+  }
+}
+
+// ==== 上传古籍原图永久保存 (IDB BLOBS store) ====
+async function saveLastSourceImage(dataURL) {
+  if (!dataURL) return;
+  state.lastSourceDataURL = dataURL;
+  try { localStorage.setItem(LS_SOURCE_VIEW, JSON.stringify({
+    scale: state.scale, offsetX: state.offsetX, offsetY: state.offsetY, rotation: state.rotation, ts: Date.now()
+  })); } catch(e){}
+  await idbPut(IDB_STORE_BLOBS, { k: 'lastSourceImage', dataURL, ts: Date.now() });
+}
+async function saveSourceViewOnly() {
+  try { localStorage.setItem(LS_SOURCE_VIEW, JSON.stringify({
+    scale: state.scale, offsetX: state.offsetX, offsetY: state.offsetY, rotation: state.rotation, ts: Date.now()
+  })); } catch(e){}
+}
+async function clearLastSourceImage() {
+  state.lastSourceDataURL = null;
+  state.image = null;
+  try { localStorage.removeItem(LS_SOURCE_VIEW); } catch(e){}
+  await idbDel(IDB_STORE_BLOBS, 'lastSourceImage');
+}
+
+// ==== 永久保存最后一张「用户上传的创作背景图」====
+async function saveUserBackground(dataURL) {
+  if (!dataURL) return false;
+  state.userBackgroundDataURL = dataURL;
+  // 主写 IndexedDB
+  const ok = await idbPut(IDB_STORE_BLOBS, { k: 'userBackground', dataURL, ts: Date.now() });
+  // 若 LS 能塞下也塞一份作为快速备份
+  try { localStorage.setItem('ddjz_user_bg_v1', dataURL); } catch(e){}
+  return ok;
+}
+async function loadUserBackground() {
+  // 先 IndexedDB 取权威版本
+  try {
+    const r = await idbGet(IDB_STORE_BLOBS, 'userBackground');
+    if (r && r.dataURL) { state.userBackgroundDataURL = r.dataURL; return r.dataURL; }
+  } catch(e){}
+  // 降级 localStorage
+  try {
+    const raw = localStorage.getItem('ddjz_user_bg_v1');
+    if (raw && typeof raw === 'string' && raw.startsWith('data:image/')) {
+      state.userBackgroundDataURL = raw;
+      // 顺手迁移回 IDB
+      idbPut(IDB_STORE_BLOBS, { k: 'userBackground', dataURL: raw, ts: Date.now() });
+      return raw;
+    }
+  } catch(e){}
+  return null;
+}
+
+// ===== 自定义背景图 · 历史上传图库（每个用户独立；IDB BLOBS 键前缀 bgHistory:<unixTs>）=====
+const BG_HISTORY_MAX = 20;     // 最多保留最近 20 张，超限自动清理最旧
+const BG_HISTORY_PREFIX = 'bgHistory:';
+// 上传成功后：写入历史条目；若与最近一张完全相同（长度相同）视为重复，不重复入库
+async function saveBgHistory(dataURL) {
+  if (!dataURL || typeof dataURL !== 'string' || !dataURL.startsWith('data:image/')) return null;
+  const list = await listBgHistory(false);
+  const len = dataURL.length;
+  // 与最新一张比对：长度相同且 dataURL 字符串相同 → 跳过（避免连选同一张图重复入库）
+  if (list && list.length) {
+    const latest = list[0];
+    if (latest && (latest.dataLength === len) && (latest._data === dataURL)) return latest.ts;
+  }
+  const ts = Date.now();
+  try {
+    await idbPut(IDB_STORE_BLOBS, { k: BG_HISTORY_PREFIX + ts, dataURL, ts, dataLength: len });
+  } catch(_) { return null; }
+  // 插入成功：自动 GC 超限最旧
+  await gcBgHistory(BG_HISTORY_MAX).catch(() => {});
+  return ts;
+}
+// 返回按 ts 倒序（最新 → 最旧）；lightMode=true 时不取 dataURL 本体（只返回元信息），用于列表渲染缩略图再懒加载
+async function listBgHistory(lightMode = true) {
+  const all = await idbAll(IDB_STORE_BLOBS);
+  const arr = [];
+  for (const r of all || []) {
+    if (!r || typeof r.k !== 'string' || !r.k.startsWith(BG_HISTORY_PREFIX)) continue;
+    const ts = Number(r.k.slice(BG_HISTORY_PREFIX.length)) || 0;
+    const entry = {
+      ts,
+      key: r.k,
+      dataLength: (typeof r.dataLength === 'number') ? r.dataLength : ((typeof r.dataURL === 'string') ? r.dataURL.length : 0),
+    };
+    if (!lightMode) entry._data = (typeof r.dataURL === 'string') ? r.dataURL : '';
+    arr.push(entry);
+  }
+  arr.sort((a, b) => b.ts - a.ts);
+  return arr;
+}
+// 获取单条历史的 dataURL（懒加载，避免一次拉 20×3MB=60MB 到内存）
+async function getBgHistoryEntry(key) {
+  try {
+    const r = await idbGet(IDB_STORE_BLOBS, key);
+    if (!r || typeof r.dataURL !== 'string' || !r.dataURL.startsWith('data:image/')) return null;
+    return r.dataURL;
+  } catch(_) { return null; }
+}
+async function delBgHistoryEntry(key) {
+  if (!key || typeof key !== 'string' || !key.startsWith(BG_HISTORY_PREFIX)) return false;
+  try { await idbDel(IDB_STORE_BLOBS, key); return true; } catch(_) { return false; }
+}
+// GC：超过上限就删除最旧的若干条到 <= 上限
+async function gcBgHistory(maxKeep = BG_HISTORY_MAX) {
+  const list = await listBgHistory(true);
+  if (list.length <= maxKeep) return 0;
+  const dropKeys = list.slice(maxKeep).map(x => x.key);
+  let ok = 0;
+  for (const k of dropKeys) ok += (await delBgHistoryEntry(k) ? 1 : 0);
+  return ok;
+}
+// 把某张历史图"挑出来继续使用"=作为当前用户最后一次上传图 → 切 custom 模式
+async function applyBgHistory(keyOrTs) {
+  const key = typeof keyOrTs === 'number'
+    ? BG_HISTORY_PREFIX + keyOrTs
+    : String(keyOrTs || '');
+  if (!key.startsWith(BG_HISTORY_PREFIX)) return false;
+  const dataURL = await getBgHistoryEntry(key);
+  if (!dataURL) { showToast('历史条目已过期'); return false; }
+  state.userBackgroundDataURL = dataURL;
+  const ok = await saveUserBackground(dataURL);
+  state.createParams.bg = 'custom';
+  // —— BUGFIX：从历史图库选用了一张"全新的当前草稿图"→ 清空 createParams.bgBlobK，
+  //   否则残留上一作品的 workBg:<其他id>，会在下次 saveWorks 时跨作品写错键、覆盖对方背景图。
+  //   bgBlobK 将在真正保存为新作品时由 btn-save-work 重新分配 bgBlobK='workBg:'+新id
+  if (state.createParams && typeof state.createParams.bgBlobK === 'string') delete state.createParams.bgBlobK;
+  saveLastCreate();
+  $$('[data-bg]').forEach(x => x.classList.toggle('active', x.dataset.bg === 'custom'));
+  syncBackground();
+  renderPaper();
+  const hint = $('#bg-custom-hint');
+  if (hint) hint.textContent = ok ? '已从历史选用' : '已从历史选用（LS备份）';
+  showToast('已从历史图库选用该图作为自定义背景图');
+  return true;
+}
+// 渲染历史面板：缩略图网格 + 空态提示 + 单条删除
+async function renderBgHistoryGrid() {
+  const grid = $('#bg-history-grid');
+  const empty = $('#bg-history-empty');
+  if (!grid || !empty) return;
+  grid.innerHTML = '';
+  const list = await listBgHistory(true);
+  if (!list.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const frag = document.createDocumentFragment();
+  const now = Date.now();
+  list.forEach((entry, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'bg-history-cell' + (i === 0 ? ' latest' : '');
+    cell.dataset.k = entry.key;
+    cell.dataset.ts = String(entry.ts);
+    // 缩略图懒加载：先给占位（等网格渲染后再 decode dataURL，避免一次 IO 爆炸）
+    const place = document.createElement('div');
+    place.style.position = 'absolute';
+    place.style.inset = '0';
+    place.style.background = 'repeating-conic-gradient(#f0dfa6 0% 25%, #fff4d0 0% 50%) 50% / 12px 12px';
+    cell.appendChild(place);
+    // 标题
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    const diffDays = Math.max(0, Math.floor((now - entry.ts) / (24*3600*1000)));
+    tag.textContent = (i === 0 ? '最新·' : '') + (diffDays === 0 ? '今天' : `${diffDays}天前`);
+    cell.appendChild(tag);
+    // 单条删除
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'del';
+    del.title = '删除这条历史';
+    del.textContent = '×';
+    del.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      if (!confirm('删除这条历史上传？（只删历史记录，不影响已保存的作品背景）')) return;
+      (async () => {
+        await delBgHistoryEntry(cell.dataset.k);
+        await renderBgHistoryGrid();
+        showToast('已从历史中删除');
+      })();
+    });
+    cell.appendChild(del);
+    // 选中（懒加载 dataURL → applyBgHistory）
+    cell.addEventListener('click', () => {
+      applyBgHistory(cell.dataset.k);
+      const panel = document.getElementById('bg-history-panel');
+      if (panel && !panel.hasAttribute('hidden')) panel.setAttribute('hidden', '');
+    });
+    // 入 DOM 后再单条异步加载真实图（不阻塞用户滚动），用 Image 解码避免阻塞主线程
+    (async (targetCell) => {
+      try {
+        const dataURL = await getBgHistoryEntry(targetCell.dataset.k);
+        if (!dataURL) return;
+        const img = new Image();
+        img.onload = () => {
+          const exist = targetCell.querySelector('img');
+          if (exist) exist.remove();
+          // 删除占位底色
+          const pl = targetCell.querySelector('div');
+          if (pl) pl.remove();
+          targetCell.insertBefore(img, targetCell.firstChild);
+        };
+        img.onerror = () => {};
+        img.src = dataURL;
+      } catch(_) {}
+    })(cell);
+    frag.appendChild(cell);
+  });
+  grid.appendChild(frag);
+}
+
+// ==== 字库保存 / 加载（IDB 主存 + localStorage 元信息备份）====
+// W3 helper：把 state.chars 与 state.library 的 keys 对齐：
+//   - library 里有、chars 里没有的字（如导入 / 旧数据加载）→ 从末尾追加入 chars
+//   - chars 里有、library 里没有的字（删除字库卡片）→ 从 chars 里去除
+//   - 去重（同一字符不允许重复出现在 chars 数组）
+//   返回字符"当前最新顺序"的数组，供渲染/保存/加载使用
+function normalizeLibraryChars() {
+  const seen = new Set();
+  const order = [];
+  // 第一遍：按 state.chars 已有顺序保留
+  for (const ch of state.chars || []) {
+    if (typeof ch !== 'string' || !ch.length) continue;
+    if (seen.has(ch)) continue;
+    if (!(ch in state.library)) continue;   // library 不存在就跳过
+    seen.add(ch);
+    order.push(ch);
+  }
+  // 第二遍：library 里剩下的 chars 追加到末尾（导入/旧数据迁移）
+  for (const ch of Object.keys(state.library || {})) {
+    if (!ch || seen.has(ch)) continue;
+    if (!Array.isArray(state.library[ch]) || state.library[ch].length === 0) continue;
+    seen.add(ch);
+    order.push(ch);
+  }
+  state.chars = order;
+  return order;
+}
+
+// W3：把某个字符"提升为字库最顶部"——用于 (a) 新采集入库、(b) 导入新增字、(c) 给已有字加新变体
+function promoteCharToTop(ch) {
+  if (!ch || !(ch in state.library)) return;
+  const arr = normalizeLibraryChars();
+  const idx = arr.indexOf(ch);
+  if (idx > 0) {
+    arr.splice(idx, 1);
+    arr.unshift(ch);
+  } else if (idx < 0) {
+    arr.unshift(ch);
+  }
+  state.chars = arr;
+}
+
+async function saveLibrary(asyncAck) {
+  const order = normalizeLibraryChars();
+  const chars = order;    // 顺序固定：数组下标 0 = 最新入库字
+  // 每个字给 addedTs 打上：order[0] = 最新 = 最大 ts；order[n-1] = 最早 = 最小 ts
+  //   addedTs 只在 IDB 记录里保存（用来重建 loadLibrary 时的显序），不占 localStorage library 空间
+  const now = Date.now();
+  // 先尝试写入 IDB：每个字单独存一条，避免单条过大
+  const tasks = [];
+  try {
+    const db = await openDB();
+    if (db) {
+      const all = await idbAll(IDB_STORE_LIB);
+      const existingChars = new Set(all.map(r => r.char));
+      for (const ec of existingChars) {
+        if (!state.library[ec]) tasks.push(idbDel(IDB_STORE_LIB, ec));
+      }
+      for (let i = 0; i < chars.length; i++) {
+        const ch = chars[i];
+        // addedTs：越小越旧，越大越新；order.length - i 越大 = 字越靠前 → ts 越大
+        const addedTs = now - (chars.length - 1 - i);
+        tasks.push(idbPut(IDB_STORE_LIB, {
+          char: ch,
+          variants: state.library[ch] || [],
+          addedTs
+        }));
+      }
+    }
+    // localStorage 备份 library（若容量足够），以及字符列表 LS_CHARS（顺序固定最新→最旧），
+    // 单独备份，避免 library JSON 过大时 chars 顺序也一起丢
+    try {
+      localStorage.setItem(LS_LIB, JSON.stringify(state.library));
+    } catch (e) {
+      try {
+        localStorage.setItem(LS_LIB + '_meta', JSON.stringify({ chars, _m: true, ts: now }));
+      } catch (_) {}
+    }
+    try {
+      localStorage.setItem(LS_CHARS, chars.join(''));
+    } catch (_) {}
+  } catch (e) {}
+  const results = await Promise.all(tasks);
+  const failed = results.filter(r => r === false).length;
+  if (failed > 0 && asyncAck !== false) showToast(`字库有 ${failed} 项写入失败，请检查手机存储`);
+  return failed === 0;
+}
+
+function loadLibraryFromStorage(raw) {
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== 'object') return null;
+    // 兼容 meta 占位（实际内容需从 IDB 拿）
+    if (obj._m) return { chars: obj.chars || [], needIDB: true };
+    return { lib: obj, needIDB: false };
+  } catch (e) { return null; }
+}
+
+async function loadLibrary() {
+  // 1) 先读 localStorage 快速得到一版 library + chars（顺序）
+  const raw = (() => { try { return localStorage.getItem(LS_LIB); } catch(e){ return null; } })();
+  const parsed = loadLibraryFromStorage(raw);
+  let needIDB = !parsed || parsed.needIDB;
+  if (parsed && parsed.lib && !parsed.needIDB) {
+    state.library = parsed.lib;
+  }
+  // 1.1) chars 顺序从 LS_CHARS 独立读；哪怕 library JSON 被丢也能在 IDB 合并后按它重排
+  try {
+    const rawChars = localStorage.getItem(LS_CHARS);
+    if (typeof rawChars === 'string' && rawChars.length) {
+      // 用 Array.from 以便正确处理代理对；不马上 set 给 state.chars，等 IDB 合并完再应用
+      state.chars = Array.from(rawChars).filter(c => typeof c === 'string' && c.length);
+    }
+  } catch(_) {}
+
+  // 2) 强制从 IDB 合并一次作为权威数据（保证图片这种大对象真正持久化），同时按 addedTs 重建显序
+  let idbRecords = null;
+  try {
+    const all = await idbAll(IDB_STORE_LIB);
+    if (all && all.length) {
+      idbRecords = all.slice().filter(r => r && typeof r.char === 'string' && Array.isArray(r.variants));
+      const out = {};
+      idbRecords.forEach(r => { out[r.char] = r.variants.slice(); });
+      state.library = out;
+      needIDB = false;
+    }
+  } catch (e) {}
+
+  // 2.1) 重建 state.chars 最终顺序优先级：
+  //   (1) IDB 记录有 addedTs 字段 → 按 addedTs 倒序（大→小=新→旧）
+  //   (2) 否则沿用 LS_CHARS 里读出来的 state.chars（library 中存在才保留）
+  //   (3) 最后走 normalizeLibraryChars：library Object.keys 顺序兜底
+  if (idbRecords && idbRecords.length) {
+    const hasTs = idbRecords.every(r => typeof r.addedTs === 'number');
+    if (hasTs) {
+      const sorted = idbRecords.slice().sort((a, b) => b.addedTs - a.addedTs).map(r => r.char);
+      state.chars = sorted;
+    }
+  }
+  normalizeLibraryChars();
+  if (needIDB) state.library = state.library || {};
+  // 3) 旧 localStorage 如果有未迁移数据（例如 parsed.lib 中有 IDB 没有的字），再写一次 IDB 迁过去
+  try { await saveLibrary(false); } catch(e){}
+}
+
+// ==== 作品保存 / 加载（IDB 主存，thumb 往往大；localStorage 仅备份标题级 meta）====
+async function saveWorks(asyncAck) {
+  // 去重
+  const seen = new Set();
+  const dedup = [];
+  for (let i = state.works.length - 1; i >= 0; i--) {
+    const w = state.works[i];
+    if (!w || !w.id) continue;
+    if (seen.has(w.id)) continue;
+    seen.add(w.id);
+    dedup.unshift(w);
+  }
+  state.works = dedup;
+  const tasks = [];
+  try {
+    const db = await openDB();
+    if (db) {
+      const allWorks = await idbAll(IDB_STORE_WORKS);
+      const keepIds = new Set(state.works.map(w => w.id));
+      const keepBgBlobKs = new Set();
+      // 1) 先把所有待保存作品里 bg=custom 的用户背景图独立写到 blobs 表，避免互相覆盖
+      for (const w of state.works) {
+        if (!w || !w.params) continue;
+        // 作品独立的背景图缓存（保存当时的状态，不受后续"上传新图"影响覆盖）
+        if (w.params.bg === 'custom') {
+          let blobK = (w.params.bgBlobK && typeof w.params.bgBlobK === 'string') ? w.params.bgBlobK : '';
+          const blobKBelongsToThisWork = blobK.startsWith('workBg:') && blobK === ('workBg:' + w.id);
+          // —— BUGFIX：bgBlobK 必须严格等于 'workBg:' + w.id（一个作品一个专属键）。
+          //   如果残留的是"曾经打开过的老作品 bgBlobK (workBg:其他id)"，绝不能复用，否则保存时：
+          //   (a) idbPut(bgBlobK, 新图) 会覆盖老作品真正的背景数据 → 老作品打开背景串错；
+          //   (b) 新作品存了一个别人的 bgBlobK，后续 saveWorks GC 会把该键当成老作品的在删除溢出时删掉。
+          if (!blobKBelongsToThisWork) {
+            blobK = 'workBg:' + w.id;
+            w.params.bgBlobK = blobK;
+          }
+          keepBgBlobKs.add(blobK);
+          // 数据来源优先级（仅当"该 work 自身明确"有数据）：
+          //   ① w._bgDataURL（本次会话新建作品时挂的，最可靠的"保存当时的图"）
+          //   ② 否则：若 blobs 里这个 workBg:<id> 键已经存在过真正数据 → 什么也不写（避免空 dataURL 覆盖掉旧的正确数据）
+          //   ③ 兜底：仅当"这是一个新建作品且 blobs 还没这个键"时允许用 state.userBackgroundDataURL
+          const hasTemp = typeof w._bgDataURL === 'string' && w._bgDataURL.startsWith('data:image/');
+          let dataURL = hasTemp ? w._bgDataURL : null;
+          if (!dataURL) {
+            try {
+              const existing = await idbGet(IDB_STORE_BLOBS, blobK);
+              if (!existing || typeof existing.dataURL !== 'string' || !existing.dataURL.startsWith('data:image/')) {
+                // 这个键完全没有数据：是全新作品且没 _bgDataURL（罕见，创建时已清理但 bg=custom）
+                //  — 允许用"创作页当前 userBackgroundDataURL"兜底一次作为新建作品的图
+                if (typeof state.userBackgroundDataURL === 'string' && state.userBackgroundDataURL.startsWith('data:image/')) {
+                  dataURL = state.userBackgroundDataURL;
+                }
+              }
+            } catch(_) {}
+          }
+          if (dataURL) {
+            tasks.push(idbPut(IDB_STORE_BLOBS, { k: blobK, dataURL, ts: Date.now(), wid: w.id }).catch(() => false));
+          } else if (!w.params.bgBlobK) {
+            // 无数据且连兜底都没有 → 取消 custom 回退 xuan
+            w.params.bg = 'xuan';
+            delete w.params.bgBlobK;
+          }
+        } else {
+          // 非 custom：清理旧残留 bgBlobK（作品后来改成 xuan/xuanwhite 时）
+          if (w.params && w.params.bgBlobK && typeof w.params.bgBlobK === 'string' && w.params.bgBlobK.startsWith('workBg:')) {
+            const delK = w.params.bgBlobK;
+            delete w.params.bgBlobK;
+            tasks.push(idbDel(IDB_STORE_BLOBS, delK).catch(() => false));
+          }
+        }
+      }
+      // 2) 删除已不存在作品对应的 blobs.workBg:*（避免垃圾累积）
+      const allBlobs = await idbAll(IDB_STORE_BLOBS);
+      for (const b of allBlobs) {
+        if (!b || typeof b.k !== 'string') continue;
+        if (b.k.startsWith('workBg:') && !keepBgBlobKs.has(b.k)) {
+          tasks.push(idbDel(IDB_STORE_BLOBS, b.k).catch(() => false));
+        }
+      }
+      // 3) 删除 works 表里被清掉的作品记录
+      for (const ex of allWorks) {
+        if (!keepIds.has(ex.id)) tasks.push(idbDel(IDB_STORE_WORKS, ex.id));
+      }
+      // 4) 写入所有现有作品记录
+      for (const w of state.works) tasks.push(idbPut(IDB_STORE_WORKS, w));
+    }
+    // localStorage 备份 meta（不含 thumb、不含 bg dataURL）
+    try {
+      const meta = state.works.map(w => {
+        const paramsClone = JSON.parse(JSON.stringify(w.params || {}));
+        // 绝对保证 LS 元信息里不塞 dataURL（params 字段里也不要）
+        if (paramsClone) delete paramsClone._bgDataURL;
+        return { id: w.id, ts: w.ts, title: w.title, params: paramsClone, hasThumb: !!w.thumb };
+      });
+      localStorage.setItem(LS_WORKS, JSON.stringify(meta));
+    } catch (e) { /* thumb 元信息超过 LS 容量就不备份 */ }
+  } catch (e) {}
+  const res = await Promise.all(tasks);
+  const failed = res.filter(r => r === false).length;
+  if (failed > 0 && asyncAck !== false) showToast(`作品有 ${failed} 项写入失败，请检查手机存储`);
+  return failed === 0;
+}
+
+async function loadWorks() {
+  // 先 localStorage meta
+  let idsToLoad = null;
+  try {
+    const raw = localStorage.getItem(LS_WORKS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // 旧格式（真正的 works，含 thumb）直接认
+      if (Array.isArray(parsed)) {
+        if (parsed.length && parsed[0] && typeof parsed[0] === 'object' && 'thumb' in parsed[0]) {
+          state.works = parsed.slice();
+        } else if (parsed.length && parsed[0] && 'id' in parsed[0] && 'params' in parsed[0]) {
+          // meta 格式：需要从 IDB 拉 thumb
+          idsToLoad = parsed.map(p => p.id);
+          state.works = parsed.map(p => ({ id: p.id, ts: p.ts, title: p.title, params: p.params, thumb: '' }));
+        }
+      }
+    }
+  } catch (e) { state.works = []; }
+  // 再从 IDB 拉权威数据
+  try {
+    const all = await idbAll(IDB_STORE_WORKS);
+    if (all && all.length) {
+      const map = new Map(all.map(w => [w.id, w]));
+      // 按存储顺序 + 原有 LS 顺序融合，优先保留 IDB 的完整记录（含 thumb）
+      if (state.works.length) {
+        state.works = state.works.map(w => map.get(w.id) || w).filter(Boolean);
+      }
+      // 若 IDB 有 LS 里没有的（meta 可能被清），追加并按 ts desc 排序
+      for (const w of all) {
+        if (!state.works.find(x => x.id === w.id)) state.works.push(w);
+      }
+      state.works.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    }
+    // 兼容老版本：若 localStorage 里保存的是完整 works（含thumb）但 IDB 没有，顺手迁移到 IDB
+    try { await saveWorks(false); } catch(e){}
+  } catch (e) {}
+  if (!Array.isArray(state.works)) state.works = [];
+}
+
+function saveLastCreate() {
+  try { localStorage.setItem(LS_LAST_CREATE, JSON.stringify(state.createParams)); }
+  catch(e){}
+}
+function loadLastCreate() {
+  try {
+    const raw = localStorage.getItem(LS_LAST_CREATE);
+    if (raw) Object.assign(state.createParams, JSON.parse(raw));
+  } catch(e){}
+}
+
+function loadImageFromDataURL(dataURL) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataURL;
+  });
+}
+
+// ===== Navigation =====
+function switchPage(name) {
+  $$('.page').forEach(p => p.classList.remove('active'));
+  $('#page-' + name).classList.add('active');
+  $$('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.page === name));
+  // W1：副标题现在位于采集页内部，不再切换 Header 类
+  if (name === 'collect') {
+    // 进入采集页时 collect-subtitle 可能刚被插入或从 display:none 变成可见，重新 fit 一行大字
+    requestAnimationFrame(() => fitSubtitleLine());
+  }
+  if (name === 'library') renderLibrary();
+  if (name === 'create') {
+    syncCreateUIFromState();
+    renderPaper();
+  }
+  if (name === 'collect') {
+    // 回采集页时如果 state.image 丢失但 blobs.lastSourceImage 还在，重新恢复，
+    //   避免"去创作保存后再回采集古籍原图不见了"
+    const redraw = () => {
+      resizeCollectCanvas();
+      if (state.image) {
+        // scale/offset 可能在 resize 后越界，兜底 fit
+        if (!(state.scale > 0 && state.scale <= 10)) {
+          fitImageToCanvas();
+        } else {
+          drawCollectCanvas();
+        }
+      } else if ($('#collect-empty')) {
+        $('#collect-empty').style.display = 'block';
+        if ($('#collect-editor')) $('#collect-editor').style.display = 'none';
+      }
+    };
+    if (state.image) {
+      requestAnimationFrame(redraw);
+    } else {
+      // 没有内存中的 image 对象：从 IndexedDB lastSourceImage 异步恢复
+      (async () => {
+        try {
+          const savedBlob = await idbGet(IDB_STORE_BLOBS, 'lastSourceImage');
+          let viewInfo = null;
+          try {
+            const raw = localStorage.getItem(LS_SOURCE_VIEW);
+            viewInfo = raw ? JSON.parse(raw) : null;
+          } catch(e) { viewInfo = null; }
+          if (savedBlob && typeof savedBlob.dataURL === 'string' && savedBlob.dataURL.startsWith('data:image/')) {
+            const img = await loadImageFromDataURL(savedBlob.dataURL);
+            state.image = img;
+            state.lastSourceDataURL = savedBlob.dataURL;
+            if (viewInfo && typeof viewInfo === 'object' && typeof viewInfo.rotation === 'number') {
+              state.rotation = viewInfo.rotation;
+            }
+            if ($('#collect-empty')) $('#collect-empty').style.display = 'none';
+            if ($('#collect-editor')) $('#collect-editor').style.display = 'flex';
+            resizeCollectCanvas();
+            if (viewInfo && typeof viewInfo === 'object' && typeof viewInfo.scale === 'number') {
+              let s = viewInfo.scale;
+              let ox = viewInfo.offsetX;
+              let oy = viewInfo.offsetY;
+              if (!(s > 0 && s <= 10 && typeof ox === 'number' && typeof oy === 'number')) {
+                fitImageToCanvas();
+              } else {
+                state.scale = s;
+                state.offsetX = ox;
+                state.offsetY = oy;
+                drawCollectCanvas();
+              }
+            } else {
+              fitImageToCanvas();
+            }
+          }
+        } catch(e) {}
+      })();
+    }
+  }
+}
+$$('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchPage(tab.dataset.page));
+});
+
+// ============================================================
+//  1. 采集模块：上传 + 手势状态机 + 精准裁剪 + 确认弹窗
+// ============================================================
+
+const canvas = $('#collect-canvas');
+const ctx = canvas.getContext('2d');
+const canvasWrap = $('#canvas-wrap');
+const selBox = $('#selection-box');
+const modeHint = $('#mode-hint');
+
+function resizeCollectCanvas() {
+  const rect = canvasWrap.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (state.image) drawCollectCanvas();
+}
+window.addEventListener('resize', () => {
+  resizeCollectCanvas();
+  renderPaper();
+});
+
+// image effective dims (rotated logical size, in original pixels)
+function getImageLogicalSize() {
+  const r = ((state.rotation % 360) + 360) % 360;
+  if (state.image) {
+    const sw = state.image.naturalWidth;
+    const sh = state.image.naturalHeight;
+    if (r === 90 || r === 270) return { w: sh, h: sw };
+    return { w: sw, h: sh };
+  }
+  return { w: 0, h: 0 };
+}
+
+function fitImageToCanvas() {
+  if (!state.image) return;
+  const rect = canvasWrap.getBoundingClientRect();
+  const { w, h } = getImageLogicalSize();
+  const scale = Math.min(rect.width / w, rect.height / h) * 0.95;
+  state.scale = Math.max(0.1, Math.min(10, scale));
+  state.offsetX = (rect.width - w * state.scale) / 2;
+  state.offsetY = (rect.height - h * state.scale) / 2;
+  drawCollectCanvas();
+  saveSourceViewOnly();
+}
+
+function drawCollectCanvas() {
+  const rect = canvasWrap.getBoundingClientRect();
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  if (!state.image) return;
+  const img = state.image;
+  const { w: lw, h: lh } = getImageLogicalSize();
+  const rotation = ((state.rotation % 360) + 360) % 360;
+  // Pivot = 屏幕上"逻辑旋转后图像"的中心点
+  const cx = state.offsetX + lw * state.scale / 2;
+  const cy = state.offsetY + lh * state.scale / 2;
+  const ow = img.naturalWidth, oh = img.naturalHeight;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation * Math.PI / 180);
+  ctx.scale(state.scale, state.scale);
+  // Now in "scaled original pixel" space, centered at image center.
+  // For 0° / 180° we draw with natural-width height (image natural w x h matches lw x lh).
+  // For 90° / 270°, logical lw=oh, lh=ow; but after the rotate(90°), the rotated original image
+  // naturally fills [ -oh/2..oh/2 , -ow/2..ow/2 ] which exactly matches logical bounds.
+  // All four cases are the same drawImage call!
+  ctx.drawImage(img, -ow / 2, -oh / 2);
+  ctx.restore();
+
+  // Draw selection highlight directly on canvas for clarity (also #selection-box DOM overlay)
+  if (state.mode === 'crop' && state.selection) {
+    const { sx, sy, cx, cy } = state.selection;
+    const x = Math.min(sx, cx), y = Math.min(sy, cy);
+    const w = Math.abs(cx - sx), h = Math.abs(cy - sy);
+    ctx.save();
+    ctx.fillStyle = 'rgba(139,37,34,0.12)';
+    ctx.strokeStyle = '#8b2522';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
+}
+
+// ===== Screen -> Original image pixel coordinate conversion =====
+// Returns {x, y} in original (non-rotated) image natural pixel coordinates,
+// clamped to image bounds.
+function screenToImagePixel(sx, sy) {
+  // Inverse of drawCollectCanvas transform.
+  if (!state.image) return { x: 0, y: 0 };
+  const rect = canvasWrap.getBoundingClientRect();
+  const lsx = sx - rect.left;
+  const lsy = sy - rect.top;
+  const { w: lw, h: lh } = getImageLogicalSize();
+  const cx = state.offsetX + lw * state.scale / 2;
+  const cy = state.offsetY + lh * state.scale / 2;
+  // Step 1: undo translate (cx,cy)
+  let x = lsx - cx;
+  let y = lsy - cy;
+  // Step 2: undo rotation (rotate reverse)
+  const rad = -state.rotation * Math.PI / 180;
+  const rx = x * Math.cos(rad) - y * Math.sin(rad);
+  const ry = x * Math.sin(rad) + y * Math.cos(rad);
+  x = rx; y = ry;
+  // Step 3: undo scale
+  x /= state.scale;
+  y /= state.scale;
+  // Now (x,y) is in rotated logical coord centered at 0; translate to corner origin
+  const ow = state.image.naturalWidth;
+  const oh = state.image.naturalHeight;
+  switch (((state.rotation % 360) + 360) % 360) {
+    case 0:
+      x += ow / 2;
+      y += oh / 2;
+      break;
+    case 90: {
+      // After 90 CW rotated drawing: the logical X axis corresponds to original image negative Y,
+      // logical Y axis corresponds to original image positive X.
+      // rotated_logical_xy = (x', y') ; origin of rotated logical at top-left = (0,0).
+      // x' = x + lw/2, y' = y + lh/2  where lw=oh, lh=ow
+      const xp = x + oh / 2;  // x'
+      const yp = y + ow / 2;  // y'
+      // Map back: original x = y', original y = (oh - 1) - x'
+      x = yp;
+      y = (oh - 1) - xp;
+      break;
+    }
+    case 180: {
+      x += ow / 2; y += oh / 2;
+      x = (ow - 1) - x;
+      y = (oh - 1) - y;
+      break;
+    }
+    case 270: {
+      const xp = x + oh / 2;
+      const yp = y + ow / 2;
+      // Rotated 270 CW (equivalent 90 CCW). Map back: original x = (ow-1) - y', original y = x'
+      x = (ow - 1) - yp;
+      y = xp;
+      break;
+    }
+  }
+  // Clamp
+  x = Math.max(0, Math.min(ow - 1, x));
+  y = Math.max(0, Math.min(oh - 1, y));
+  return { x, y };
+}
+
+// ===== Gesture State Machine =====
+const gesture = {
+  pointers: new Map(),   // id -> {x,y}
+  mode: 'idle',          // 'idle' | 'pan' | 'pinch' | 'select'
+  startPinchDist: 0,
+  startScale: 1,
+  startMid: {x:0,y:0},
+  startOffset: {x:0,y:0},
+  startPanPt: {x:0,y:0},
+  startSelect: null,
+};
+
+canvasWrap.style.touchAction = 'none';
+
+function onPointerDown(e) {
+  canvasWrap.setPointerCapture(e.pointerId);
+  gesture.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const count = gesture.pointers.size;
+
+  if (count === 1) {
+    const p = [...gesture.pointers.values()][0];
+    if (state.mode === 'crop') {
+      gesture.mode = 'select';
+      const rect = canvasWrap.getBoundingClientRect();
+      gesture.startSelect = { sx: p.x - rect.left, sy: p.y - rect.top };
+      state.selection = { sx: gesture.startSelect.sx, sy: gesture.startSelect.sy, cx: gesture.startSelect.sx, cy: gesture.startSelect.sy };
+      updateSelectionBox();
+    } else {
+      gesture.mode = 'pan';
+      gesture.startPanPt = { x: p.x, y: p.y };
+      gesture.startOffset = { x: state.offsetX, y: state.offsetY };
+    }
+  } else if (count === 2) {
+    // transition to pinch
+    gesture.mode = 'pinch';
+    const pts = [...gesture.pointers.values()];
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    gesture.startPinchDist = Math.hypot(dx, dy) || 1;
+    gesture.startScale = state.scale;
+    gesture.startMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    gesture.startOffset = { x: state.offsetX, y: state.offsetY };
+    state.selection = null;
+    updateSelectionBox();
+  }
+}
+
+function onPointerMove(e) {
+  if (!gesture.pointers.has(e.pointerId)) return;
+  gesture.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (gesture.mode === 'pan' && gesture.pointers.size === 1) {
+    const p = gesture.pointers.get(e.pointerId);
+    state.offsetX = gesture.startOffset.x + (p.x - gesture.startPanPt.x);
+    state.offsetY = gesture.startOffset.y + (p.y - gesture.startPanPt.y);
+    drawCollectCanvas();
+  } else if (gesture.mode === 'pinch' && gesture.pointers.size === 2) {
+    const pts = [...gesture.pointers.values()];
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ratio = dist / gesture.startPinchDist;
+    const newScale = Math.max(0.1, Math.min(10, gesture.startScale * ratio));
+    // Scale around startMid
+    const rect = canvasWrap.getBoundingClientRect();
+    const mx = gesture.startMid.x - rect.left;
+    const my = gesture.startMid.y - rect.top;
+    state.scale = newScale;
+    // offset so that the image point under (mx,my) stays under it
+    // (mx - startOffsetX) / startScale == (mx - newOffsetX) / newScale
+    state.offsetX = mx - (mx - gesture.startOffset.x) * (newScale / gesture.startScale);
+    state.offsetY = my - (my - gesture.startOffset.y) * (newScale / gesture.startScale);
+    drawCollectCanvas();
+  } else if (gesture.mode === 'select' && gesture.pointers.size === 1) {
+    const p = gesture.pointers.get(e.pointerId);
+    const rect = canvasWrap.getBoundingClientRect();
+    state.selection.cx = p.x - rect.left;
+    state.selection.cy = p.y - rect.top;
+    updateSelectionBox();
+    drawCollectCanvas();
+  }
+}
+
+function onPointerUp(e) {
+  gesture.pointers.delete(e.pointerId);
+  if (gesture.pointers.size === 0) {
+    if (gesture.mode === 'select' && state.selection) {
+      const { sx, sy, cx, cy } = state.selection;
+      const w = Math.abs(cx - sx);
+      const h = Math.abs(cy - sy);
+      if (w >= 10 && h >= 10) {
+        performCrop(sx, sy, cx, cy);
+      } else {
+        state.selection = null;
+        updateSelectionBox();
+        drawCollectCanvas();
+      }
+    }
+    // 手势结束时，持久化当前视图状态（缩放/平移/旋转）
+    saveSourceViewOnly();
+    gesture.mode = 'idle';
+    state.selection = null;
+    updateSelectionBox();
+    drawCollectCanvas();
+  } else if (gesture.pointers.size === 1 && gesture.mode === 'pinch') {
+    // Downgrade to pan
+    const p = [...gesture.pointers.values()][0];
+    gesture.mode = 'pan';
+    gesture.startPanPt = { x: p.x, y: p.y };
+    gesture.startOffset = { x: state.offsetX, y: state.offsetY };
+  }
+}
+
+canvasWrap.addEventListener('pointerdown', onPointerDown);
+canvasWrap.addEventListener('pointermove', onPointerMove);
+canvasWrap.addEventListener('pointerup', onPointerUp);
+canvasWrap.addEventListener('pointercancel', onPointerUp);
+canvasWrap.addEventListener('pointerleave', onPointerUp);
+
+function updateSelectionBox() {
+  if (!state.selection) { selBox.style.display = 'none'; return; }
+  const { sx, sy, cx, cy } = state.selection;
+  const x = Math.min(sx, cx), y = Math.min(sy, cy);
+  const w = Math.abs(cx - sx), h = Math.abs(cy - sy);
+  selBox.style.display = 'block';
+  selBox.style.left = x + 'px';
+  selBox.style.top = y + 'px';
+  selBox.style.width = w + 'px';
+  selBox.style.height = h + 'px';
+}
+
+// ===== Perform crop (核心：精准坐标转换 + 边界保护) =====
+function performCrop(ssx, ssy, scx, scy) {
+  if (!state.image) return;
+  const rect = canvasWrap.getBoundingClientRect();
+  // Convert 2 screen corners to original image pixels (absolute coords within wrap)
+  const p1 = screenToImagePixel(rect.left + Math.min(ssx, scx), rect.top + Math.min(ssy, scy));
+  const p2 = screenToImagePixel(rect.left + Math.max(ssx, scx), rect.top + Math.max(ssy, scy));
+  // Now these may be in any order due to rotation mapping— just take pixel bounding box
+  const ix1 = Math.max(0, Math.min(p1.x, p2.x));
+  const iy1 = Math.max(0, Math.min(p1.y, p2.y));
+  const ix2 = Math.min(state.image.naturalWidth - 1, Math.max(p1.x, p2.x));
+  const iy2 = Math.min(state.image.naturalHeight - 1, Math.max(p1.y, p2.y));
+  const sx = Math.floor(ix1);
+  const sy = Math.floor(iy1);
+  const sw = Math.max(1, Math.floor(ix2 - ix1));
+  const sh = Math.max(1, Math.floor(iy2 - iy1));
+  // W4 智能高清：裁剪时按真实像素出图，目标尺寸至少是 max(64, fontSize*2)——
+  //   如果用户从高分辨率古籍图里选了很小一块（sw/sh < target），offscreen 先按 sw/sh 取真实像素再 upscale；
+  //   如果选区本身就很大，则保留原始大尺寸不做额外放大，省 CPU。
+  const minTarget = Math.max(64, state.createParams.fontSize * 2);
+  // 真正输出尺寸 = 至少达到 minTarget（不够就放大 2× 整数倍），但不超过 4×（避免 8MB 单字图爆炸）
+  let outW = sw, outH = sh;
+  const currentMax = Math.max(sw, sh);
+  if (currentMax < minTarget) {
+    const k = Math.max(2, Math.ceil(minTarget / currentMax));
+    const maxK = Math.floor(1024 / currentMax);   // 单字图最终像素不超 ~1024
+    const useK = Math.max(1, Math.min(4, Math.min(k, maxK || 4)));
+    outW = sw * useK;
+    outH = sh * useK;
+  }
+  // Crop via offscreen canvas to real original pixels，再高质量插值放大到 outW/outH（pre-upscale 粗放大），
+  //   真正的 Lanczos 细采样在入库时由 upscaleVariant 做
+  const off = document.createElement('canvas');
+  off.width = outW;
+  off.height = outH;
+  const octx = off.getContext('2d');
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(state.image, sx, sy, sw, sh, 0, 0, outW, outH);
+  // W4：对"放大后的 canvas 内容"做一轮轻度锐化（在入库前还会再 upscaleVariant 一次）
+  try {
+    const lap = mildSharpenIfSmall(octx, outW, outH, /* threshold */ 512);
+    if (lap) octx.putImageData(lap, 0, 0);
+  } catch(_) {}
+  const dataURL = off.toDataURL('image/png');
+  // Preview in confirm modal
+  const preview = $('#crop-preview-canvas');
+  preview.width = 120; preview.height = 120;
+  const pctx = preview.getContext('2d');
+  pctx.clearRect(0, 0, 120, 120);
+  // Draw fit
+  const ratio = Math.min(116 / sw, 116 / sh);
+  const dw = sw * ratio, dh = sh * ratio;
+  pctx.drawImage(off, (120 - dw) / 2, (120 - dh) / 2, dw, dh);
+  state.pendingCrop = { dataURL, width: sw, height: sh };
+  $('#char-input').value = '';
+  openConfirmModal();
+}
+
+// ===== Mode buttons =====
+$$('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    $$('.mode-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.mode = b.dataset.mode;
+    state.selection = null;
+    updateSelectionBox();
+    modeHint.textContent = state.mode === 'move'
+      ? '✋ 单指平移 · 双指捏合缩放'
+      : '✂️ 单指拖拽框选 · 双指仍可缩放';
+    drawCollectCanvas();
+  });
+});
+
+$('#btn-fit').addEventListener('click', fitImageToCanvas);
+$('#btn-rotate').addEventListener('click', () => {
+  state.rotation = (state.rotation + 90) % 360;
+  fitImageToCanvas();
+  saveSourceViewOnly();
+});
+$('#btn-reset-image').addEventListener('click', () => {
+  if (!confirm('确定更换图片吗？当前图片操作会丢失。')) return;
+  clearLastSourceImage();
+  $('#collect-editor').style.display = 'none';
+  $('#collect-empty').style.display = 'flex';
+  $('#file-input').value = '';
+});
+
+// ===== Upload Image =====
+$('#btn-upload-trigger').addEventListener('click', () => $('#file-input').click());
+$('#file-input').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const dataURL = reader.result;
+      const img = await loadImageFromDataURL(dataURL);
+      state.image = img;
+      state.rotation = 0;
+      $('#collect-empty').style.display = 'none';
+      $('#collect-editor').style.display = 'flex';
+      resizeCollectCanvas();
+      setTimeout(() => {
+        resizeCollectCanvas();
+        fitImageToCanvas();
+        // 永久保存原图 + 初始视图
+        saveLastSourceImage(dataURL);
+      }, 50);
+    } catch (err) {
+      showToast('图片加载失败');
+    }
+  };
+  reader.readAsDataURL(f);
+});
+
+// ===== Confirm Modal =====
+function openConfirmModal() {
+  $('#confirm-mask').classList.add('open');
+  setTimeout(() => $('#char-input').focus(), 50);
+}
+function closeConfirmModal() {
+  $('#confirm-mask').classList.remove('open');
+  state.pendingCrop = null;
+}
+$('#modal-close').addEventListener('click', closeConfirmModal);
+$('#modal-cancel').addEventListener('click', closeConfirmModal);
+$('#confirm-mask').addEventListener('click', (e) => {
+  if (e.target.id === 'confirm-mask') closeConfirmModal();
+});
+$('#modal-ok').addEventListener('click', async () => {
+  const input = $('#char-input').value.trim();
+  if (!input) { showToast('请输入一个字'); return; }
+  const ch = Array.from(input)[0]; // 取第一个字符（兼容 Unicode）
+  if (!state.pendingCrop) return;
+  if (!state.library[ch]) state.library[ch] = [];
+  // W4：新采集入库前先做一次"智能高清处理"（超分 + unsharp mask + 对比度），
+  //   把结果压入库（不压原图，减少后续每次都 upscale 的 CPU 消耗）
+  let src = state.pendingCrop.dataURL;
+  try {
+    const hd = await upscaleVariant(src, state.createParams.fontSize);
+    if (hd && typeof hd === 'string' && hd.startsWith('data:image/')) src = hd;
+  } catch(_) {}
+  state.library[ch].push(src);
+  // W3：把这个字提升到字库最顶部（新采集的字立即首屏可见）
+  promoteCharToTop(ch);
+  await saveLibrary();
+  showToast(`「${ch}」已加入字库（高清处理完成）`);
+  closeConfirmModal();
+});
+
+// ============================================================
+//  2. 个人字库模块：卡片、搜索、变体滑动、删除（事件委托）、导入/导出
+// ============================================================
+
+$('#lib-search').addEventListener('input', renderLibrary);
+// 排序胶囊切换（🕘 最新 / 🔤 拼音）
+(function bindLibSortPill(){
+  const pill = document.getElementById('sort-pill');
+  if (!pill) return;
+  // 初始高亮：读 LS_LIB_SORT 偏好（默认 'added'）
+  let mode = 'added';
+  try {
+    const raw = localStorage.getItem(LS_LIB_SORT);
+    if (raw === 'added' || raw === 'pinyin') mode = raw;
+  } catch(_) {}
+  pill.querySelectorAll('button[data-sort]').forEach(b => {
+    b.classList.toggle('active', b.dataset.sort === mode);
+    b.addEventListener('click', () => {
+      const want = b.dataset.sort;
+      if (want !== 'added' && want !== 'pinyin') return;
+      pill.querySelectorAll('button[data-sort]').forEach(x => x.classList.toggle('active', x.dataset.sort === want));
+      try { localStorage.setItem(LS_LIB_SORT, want); } catch(_) {}
+      renderLibrary();
+    });
+  });
+})();
+function getLibSortMode() {
+  const pill = document.getElementById('sort-pill');
+  const active = pill && pill.querySelector('button[data-sort].active');
+  const want = (active && active.dataset.sort) || 'added';
+  return (want === 'pinyin' || want === 'added') ? want : 'added';
+}
+
+// 根据当前排序模式，得到字库的展示顺序（数组，chars 列表）
+function getLibraryDisplayOrder() {
+  const baseOrder = normalizeLibraryChars(); // 默认 addedTs 倒序（chars 显序就是倒序实现）
+  const sort = getLibSortMode();
+  if (sort === 'pinyin') {
+    return baseOrder.slice().sort(cmpPinyin);
+  }
+  return baseOrder;
+}
+
+function renderLibrary() {
+  const kw = ($('#lib-search').value || '').trim();
+  const grid = $('#char-grid');
+  grid.innerHTML = '';
+  // 字库展示排序：默认采集时间倒序（state.chars 显序），可选拼音首字母
+  const order = getLibraryDisplayOrder();
+  const chars = kw
+    ? order.filter(c => !kw || c.includes(kw))
+    : order;
+  let totalVariants = 0;
+  order.forEach(ch => totalVariants += (state.library[ch] ? state.library[ch].length : 0));
+  $('#lib-count').textContent = `字库共 ${order.length} 字 · ${totalVariants} 变体`;
+  $('#lib-empty').style.display = chars.length ? 'none' : 'block';
+  const frag = document.createDocumentFragment();
+  chars.forEach(ch => {
+    const variants = state.library[ch];
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `
+      <div class="char-head">
+        <span class="char-name">${escapeHtml(ch)}</span>
+        <span class="char-count">${variants.length} 变体</span>
+        <button class="del-char" data-action="del-char" data-char="${escapeAttr(ch)}" title="删除该字及所有变体">×</button>
+      </div>
+      <div class="variants-scroll">
+        ${variants.map((v, i) => `
+          <div class="variant">
+            <button class="del-variant" data-action="del-variant" data-char="${escapeAttr(ch)}" data-index="${i}" title="删除该变体">×</button>
+            <img src="${v}" alt="${escapeAttr(ch)}" />
+          </div>
+        `).join('')}
+      </div>
+    `;
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+}
+
+// 事件委托：父容器统一绑定
+$('#char-grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  e.stopPropagation();
+  const action = btn.dataset.action;
+  const ch = btn.dataset.char;
+  if (action === 'del-char') {
+    if (confirm(`确定删除「${ch}」及其 ${state.library[ch] ? state.library[ch].length : 0} 个变体吗？`)) {
+      delete state.library[ch];
+      saveLibrary();
+      renderLibrary();
+      showToast(`已删除「${ch}」`);
+    }
+  } else if (action === 'del-variant') {
+    const idx = parseInt(btn.dataset.index, 10);
+    if (!state.library[ch]) return;
+    if (confirm(`确定删除「${ch}」的第 ${idx + 1} 个变体吗？`)) {
+      state.library[ch].splice(idx, 1);
+      if (state.library[ch].length === 0) delete state.library[ch];
+      saveLibrary();
+      renderLibrary();
+    }
+  }
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// 导入 / 导出
+$('#btn-export-lib').addEventListener('click', () => {
+  const data = JSON.stringify({ version: 1, library: state.library, exportedAt: Date.now() }, null, 2);
+  const blob = new Blob([data], { type: 'application/json;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `大典集字坊-字库-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  showToast('字库已导出');
+});
+$('#btn-import-lib').addEventListener('click', () => $('#lib-import-file').click());
+$('#lib-import-file').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const obj = JSON.parse(r.result);
+      const lib = obj.library || obj;
+      let added = 0, merged = 0;
+      const newChars = [];
+      // 先按 JSON 给出的顺序遍历（通常 = 用户当年导出时的 chars 顺序）
+      Object.keys(lib).forEach(ch => {
+        if (!Array.isArray(lib[ch])) return;
+        if (!state.library[ch]) { state.library[ch] = []; added++; }
+        const before = state.library[ch].length;
+        lib[ch].forEach(v => {
+          if (typeof v === 'string' && v.startsWith('data:image/')) state.library[ch].push(v);
+        });
+        merged += state.library[ch].length - before;
+        // W3：本次"有新内容加入"的字，按遍历顺序加入 newChars 头，导入完成后批量 promote 到顶部
+        //   （新增字优先；合并变体的旧字也适度置顶）
+        if (state.library[ch].length - before > 0) newChars.push(ch);
+      });
+      // W3：把"新增/合并过变体的字符"按导入时顺序整体 promote 到字库最上
+      if (newChars.length) {
+        normalizeLibraryChars();
+        for (let i = newChars.length - 1; i >= 0; i--) promoteCharToTop(newChars[i]);
+      }
+      saveLibrary();
+      renderLibrary();
+      showToast(`导入完成：新增 ${added} 字，合并 ${merged} 变体`);
+    } catch (err) {
+      showToast('导入失败：文件格式不正确');
+    } finally {
+      $('#lib-import-file').value = '';
+    }
+  };
+  r.readAsText(f, 'utf-8');
+});
+
+// ============================================================
+//  3. 创作排版模块
+// ============================================================
+
+const paper = $('#paper');
+const paperContent = $('#paper-content');
+const paperBg = $('#paper-bg');
+
+// ===== UI Bindings =====
+$('#text-input').addEventListener('input', (e) => {
+  const newVal = e.target.value;
+  state.createParams.text = newVal;
+  saveLastCreate(); renderPaper();
+});
+
+function bindRange(id, key, suffix = 'px', transform = v => +v) {
+  const el = $('#' + id);
+  const update = () => {
+    el.style.setProperty('--val', ((el.value - el.min) / (el.max - el.min) * 100) + '%');
+    const vEl = $('#' + id + '-v');
+    if (vEl) vEl.textContent = el.value + suffix;
+    state.createParams[key] = transform(el.value);
+    saveLastCreate(); renderPaper();
+  };
+  el.addEventListener('input', update);
+  update();
+}
+bindRange('fontsize', 'fontSize');
+bindRange('letterspace', 'letterSpace');
+bindRange('linespace', 'lineSpace');
+
+$$('[data-layout]').forEach(b => {
+  b.addEventListener('click', () => {
+    $$('[data-layout]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.createParams.layout = b.dataset.layout;
+    saveLastCreate(); renderPaper();
+  });
+});
+$$('[data-bg]').forEach(b => {
+  b.addEventListener('click', async () => {
+    const bg = b.dataset.bg;
+    if (bg === 'custom') {
+      // 『🎨 自定义背景图』按钮按两态：
+      //   1) 当前背景 ≠ custom → 优先切到"最后一次上传的背景图"（不弹文件选择器，避免把最后一次图误清空）
+      //      若从未上传过（userBackgroundDataURL 为空），才首次弹出文件选择器
+      //   2) 当前背景 已 = custom → 再次点击等价于"想换一张新图"，立刻弹文件选择器
+      const currBg = state.createParams.bg;
+      if (currBg !== 'custom') {
+        if (typeof state.userBackgroundDataURL === 'string' && state.userBackgroundDataURL.startsWith('data:image/')) {
+          $$('[data-bg]').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          state.createParams.bg = 'custom';
+          // —— BUGFIX：首次切换到 custom（复用最后一次上传图）也算"草稿使用的是当前的 userBackground"，
+          //   清理上一次打开老作品遗留的 bgBlobK（workBg:OTHER_ID），避免新保存作品时覆盖别人的背景数据。
+          if (typeof state.createParams.bgBlobK === 'string') delete state.createParams.bgBlobK;
+          saveLastCreate();
+          syncBackground();
+          renderPaper();
+          const hint = $('#bg-custom-hint');
+          if (hint) hint.textContent = '再点一次可更换';
+          showToast('已使用最后一次上传的自定义背景图');
+          return;
+        }
+        // 没有最后一次图 → 首次上传
+        $('#bg-upload-file').click();
+        return;
+      } else {
+        // 已经在 custom 模式下 → 本次点击 = 想换一张新图
+        // —— BUGFIX：与首次切换一致，也清理旧 bgBlobK，确保用户选完新图后保存为新作品不会串到老作品专属键
+        if (typeof state.createParams.bgBlobK === 'string') delete state.createParams.bgBlobK;
+        $('#bg-upload-file').click();
+        return;
+      }
+    }
+    $$('[data-bg]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    state.createParams.bg = bg;
+    // 切到宣纸·米黄/米白（非 custom）时：同步清除旧残留 bgBlobK（saveWorks 也会删，尽早清理更安全 & 视觉一致）
+    if (typeof state.createParams.bgBlobK === 'string') delete state.createParams.bgBlobK;
+    saveLastCreate();
+    syncBackground();
+    renderPaper();
+  });
+});
+
+// 上传自定义背景图：双击也可唤起文件选择（与"再点一次可更换"的单击语义一致，不额外触发首次切换）
+$('#btn-bg-custom').addEventListener('dblclick', (e) => { e.preventDefault(); $('#bg-upload-file').click(); });
+$('#bg-upload-file').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  // 每次 change 后清空 value：用户下次选同一张文件也会重新触发 change
+  $('#bg-upload-file').value = '';
+  if (!f) return;
+  if (!/^image\//.test(f.type) || f.size > 12 * 1024 * 1024) {
+    showToast('请选择 ≤12MB 的图片');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const dataURL = String(reader.result || '');
+      if (!dataURL.startsWith('data:image/')) throw new Error('格式错误');
+      const ok = await saveUserBackground(dataURL);
+      // 写入完成后同时入库「历史上传图库」：最近 20 张自动保留，重复图自动跳过
+      //   （后台异步，不阻塞 saveLastCreate/syncBackground 的 UI 刷新）
+      saveBgHistory(dataURL).catch(() => {});
+      // 写入完成后，切到 custom 模式并重绘
+      state.createParams.bg = 'custom';
+      // —— BUGFIX：上传了一张全新的自定义背景图 → 清理旧残留 bgBlobK 以保护老作品的数据
+      if (typeof state.createParams.bgBlobK === 'string') delete state.createParams.bgBlobK;
+      saveLastCreate();
+      $$('[data-bg]').forEach(x => x.classList.toggle('active', x.dataset.bg === 'custom'));
+      syncBackground();
+      renderPaper();
+      const hint = $('#bg-custom-hint');
+      if (hint) hint.textContent = '再点一次可更换';
+      showToast(ok ? '自定义背景图已永久保存' : '自定义背景图保存成功（LS备份）');
+    } catch (err) {
+      showToast('自定义背景图上传失败：' + (err && err.message ? err.message : err));
+    }
+  };
+  reader.readAsDataURL(f);
+});
+
+// ==== 自定义背景图 · 历史面板开关 / 交互 ====
+$('#btn-bg-history') && $('#btn-bg-history').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const panel = document.getElementById('bg-history-panel');
+  if (!panel) return;
+  if (panel.hasAttribute('hidden')) {
+    panel.removeAttribute('hidden');
+    await renderBgHistoryGrid();
+  } else {
+    panel.setAttribute('hidden', '');
+  }
+});
+$('#bg-history-close') && $('#bg-history-close').addEventListener('click', () => {
+  const panel = document.getElementById('bg-history-panel');
+  if (panel) panel.setAttribute('hidden', '');
+});
+$('#bg-history-gc') && $('#bg-history-gc').addEventListener('click', async () => {
+  const dropped = await gcBgHistory(BG_HISTORY_MAX);
+  await renderBgHistoryGrid();
+  showToast(dropped ? `已清理 ${dropped} 条超出上限的旧历史` : '没有超过上限的条目（最多 ' + BG_HISTORY_MAX + ' 张）');
+});
+// 点击历史面板外区域关闭
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('bg-history-panel');
+  if (!panel || panel.hasAttribute('hidden')) return;
+  const btn = document.getElementById('btn-bg-history');
+  if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+  panel.setAttribute('hidden', '');
+});
+
+function syncBackground() {
+  paperBg.className = '';
+  const bg = state.createParams.bg;
+  // 清除旧内联背景
+  paperBg.style.backgroundImage = '';
+  paperBg.style.backgroundSize = '';
+  paperBg.style.backgroundPosition = '';
+  // 移除旧 img（仅 custom 会注入 .paper-bg-img；xuan / xuanwhite 走 CSS 自绘）
+  const oldImgs = paperBg.querySelectorAll('img.paper-bg-img');
+  oldImgs.forEach(x => x.remove());
+
+  let realBg = bg;
+  // 同步上传背景按钮提示文案
+  const updateHint = (customMode) => {
+    const hint = $('#bg-custom-hint');
+    if (!hint) return;
+    hint.textContent = (customMode || state.userBackgroundDataURL) ? '点此更换' : '点此选图';
+  };
+
+  if (bg === 'xuan') {
+    realBg = 'xuan';
+    updateHint(false);
+  } else if (bg === 'xuanwhite') {
+    realBg = 'xuanwhite';
+    updateHint(false);
+  } else if (bg === 'custom') {
+    realBg = 'custom';
+    if (state.userBackgroundDataURL) {
+      const img = document.createElement('img');
+      img.className = 'paper-bg-img';
+      img.alt = '自定义背景';
+      img.src = state.userBackgroundDataURL;
+      paperBg.appendChild(img);
+      const hint = $('#bg-custom-hint');
+      if (hint) hint.textContent = '点此更换';
+    } else {
+      // 没图的情况下回退到米黄宣纸，避免纯白
+      realBg = 'xuan';
+    }
+  } else {
+    realBg = 'xuan';
+  }
+  paperBg.classList.add('bg-' + realBg);
+}
+
+function syncCreateUIFromState() {
+  $('#text-input').value = state.createParams.text;
+  $('#text-input').placeholder = '请输入你心中的文案';
+  $$('[data-layout]').forEach(x => x.classList.toggle('active', x.dataset.layout === state.createParams.layout));
+  $$('[data-bg]').forEach(x => x.classList.toggle('active', x.dataset.bg === state.createParams.bg));
+  ['fontsize','letterspace','linespace'].forEach(id => {
+    const key = id === 'fontsize' ? 'fontSize' : id;
+    const el = $('#' + id);
+    el.value = state.createParams[key];
+    el.dispatchEvent(new Event('input'));
+  });
+  syncBackground();
+  // 同步宣纸展开状态
+  if (state.createParams._paperExpanded) paper.classList.add('expanded');
+  else paper.classList.remove('expanded');
+  updatePaperToggle();
+}
+
+// ===== 智能高清处理（裁剪字的变体图）=====
+// 目标：用户从古籍图中裁剪的小块字常常只有 20~50px，在 32~60px 的创作排版里会糊；
+// 流程：preload → 测 naturalSize —— 比目标尺寸小时，canvas 做 Lanczos3 整数倍重采样到 2×，
+//        再做 1% 黑/白点裁剪的线性对比度拉伸，最后一轮 unsharp mask (3×3 Laplacian)。
+// 结果缓存在内存 state._upscaleMap（key = dataURL 前 64 字符 + 尺寸哈希），避免每帧排版重复跑 CPU。
+(() => {
+  // 内存缓存 key → { outDataURL, naturalW, naturalH, targetFont }
+  const UPSCALE_LRU_CACHE_MAX = 800;
+  const lruMap = (() => {
+    const map = new Map(); // key -> { val, at }
+    return {
+      get(k){ const r = map.get(k); if (r) { r.at = Date.now(); return r.val; } return undefined; },
+      set(k, v){
+        if (map.size >= UPSCALE_LRU_CACHE_MAX) {
+          let oldestKey = null, oldestAt = Infinity;
+          for (const [kk, vv] of map) { if (vv.at < oldestAt) { oldestAt = vv.at; oldestKey = kk; } }
+          if (oldestKey != null) map.delete(oldestKey);
+        }
+        map.set(k, { val: v, at: Date.now() });
+      }
+    };
+  })();
+
+  // 3×3 拉普拉斯锐化（边缘增强，适合古籍小字）
+  function applyLaplacian(idata, amount = 0.35) {
+    const w = idata.width, h = idata.height;
+    const src = idata.data;
+    const out = new Uint8ClampedArray(src);
+    const a = amount;
+    const c = 1 + 4 * a; // center weight
+    // 系数：center c, up/down/left/right -a；只处理亮度通道（灰度）— 古籍黑字近似单通道，省一半 CPU
+    const gray = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const cy = y > 0 ? i - w * 4 : i;
+        const fy = y < h - 1 ? i + w * 4 : i;
+        const cx = x > 0 ? i - 4 : i;
+        const fx = x < w - 1 ? i + 4 : i;
+        const midG = gray(src[i], src[i+1], src[i+2]);
+        const nG = (c * midG
+          - a * gray(src[cx], src[cx+1], src[cx+2])
+          - a * gray(src[fx], src[fx+1], src[fx+2])
+          - a * gray(src[cy], src[cy+1], src[cy+2])
+          - a * gray(src[fy], src[fy+1], src[fy+2]));
+        if (Math.abs(nG - midG) < 0.5) continue; // 平坦区域不做，防噪
+        const ratio = midG === 0 ? 1 : (nG / midG);
+        const clamp = (v) => (v < 0 ? 0 : (v > 255 ? 255 : v));
+        out[i]   = clamp(Math.round(src[i]   * ratio));
+        out[i+1] = clamp(Math.round(src[i+1] * ratio));
+        out[i+2] = clamp(Math.round(src[i+2] * ratio));
+      }
+    }
+    return new ImageData(out, w, h);
+  }
+
+  // 对比度：裁掉 1% 最亮/最暗像素（去掉古籍纸黄偏的脏白与微黑点），线性映射回 0~255
+  function linearStretch(idata, percentCut = 0.01) {
+    const d = idata.data, w = idata.width, h = idata.height;
+    // 走灰度直方图
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) {
+      const g = (d[i] * 77 + d[i+1] * 150 + d[i+2] * 29) >> 8;
+      hist[g]++;
+    }
+    const total = w * h;
+    let acc = 0, low = 0, high = 255;
+    const loThr = Math.floor(total * percentCut);
+    const hiThr = total - loThr - 1;
+    for (let g = 0; g < 256; g++) {
+      const prev = acc; acc += hist[g];
+      if (prev <= loThr && acc > loThr) low = g;
+      if (prev <= hiThr && acc > hiThr) { high = g; break; }
+    }
+    if (high - low < 12) return idata;  // 对比已经很好，跳过
+    const scale = 255 / (high - low);
+    const out = new Uint8ClampedArray(d);
+    const clamp = (v) => (v < 0 ? 0 : (v > 255 ? 255 : v));
+    for (let i = 0; i < d.length; i += 4) {
+      out[i]   = clamp(Math.round((d[i]   - low) * scale));
+      out[i+1] = clamp(Math.round((d[i+1] - low) * scale));
+      out[i+2] = clamp(Math.round((d[i+2] - low) * scale));
+    }
+    return new ImageData(out, w, h);
+  }
+
+  // Lanczos3 (a=3) 1D 核
+  function lanczos3(x) {
+    if (x < -3) return 0; if (x > 3) return 0;
+    if (x === 0) return 1;
+    const pi = Math.PI;
+    const ax = Math.abs(x);
+    return (3 * Math.sin(pi * ax) * Math.sin(pi * ax / 3)) / (pi * pi * ax * ax);
+  }
+
+  // 双步 Lanczos3 先列后行：把 src (sw,sh) 整数倍放大 k 倍 → 返回新 ImageData
+  function lanczos3Scale(src, sw, sh, k) {
+    const dw = sw * k, dh = sh * k;
+    // Step 1: 水平放大 (sw,sh) → (dw,sh)；仅对行方向做 2D separable 省 CPU
+    const tmp = new Uint8ClampedArray(dw * sh * 4);
+    for (let y = 0; y < sh; y++) {
+      const row = y * sw * 4;
+      const row2 = y * dw * 4;
+      for (let x = 0; x < dw; x++) {
+        // source center = (x + 0.5)/k - 0.5
+        const sx = (x + 0.5) / k - 0.5;
+        const x0 = Math.floor(sx - 3) + 1;
+        const x1 = Math.floor(sx + 3);
+        let r = 0, g = 0, b = 0, a = 0, wsum = 0;
+        for (let xi = x0; xi <= x1; xi++) {
+          const xc = Math.max(0, Math.min(sw - 1, xi));
+          const kk = lanczos3(sx - xi);
+          const p = row + xc * 4;
+          r += src[p] * kk; g += src[p+1] * kk; b += src[p+2] * kk; a += src[p+3] * kk; wsum += kk;
+        }
+        const p = row2 + x * 4;
+        const ws = wsum === 0 ? 1 : wsum;
+        tmp[p]   = r/wsum|0;
+        tmp[p+1] = g/wsum|0;
+        tmp[p+2] = b/wsum|0;
+        tmp[p+3] = a/wsum|0;
+      }
+    }
+    // Step 2: 垂直放大 (dw,sh) → (dw,dh)
+    const out = new Uint8ClampedArray(dw * dh * 4);
+    for (let x = 0; x < dw; x++) {
+      const col0 = x * 4;
+      for (let y = 0; y < dh; y++) {
+        const sy = (y + 0.5) / k - 0.5;
+        const y0 = Math.floor(sy - 3) + 1;
+        const y1 = Math.floor(sy + 3);
+        let r = 0, g = 0, b = 0, a = 0, wsum = 0;
+        for (let yi = y0; yi <= y1; yi++) {
+          const yc = Math.max(0, Math.min(sh - 1, yi));
+          const kk = lanczos3(sy - yi);
+          const p = yc * dw * 4 + col0;
+          r += tmp[p] * kk; g += tmp[p+1] * kk; b += tmp[p+2] * kk; a += tmp[p+3] * kk; wsum += kk;
+        }
+        const p = y * dw * 4 + col0;
+        const ws = wsum === 0 ? 1 : wsum;
+        out[p]   = r/wsum|0;
+        out[p+1] = g/wsum|0;
+        out[p+2] = b/wsum|0;
+        out[p+3] = a/wsum|0;
+      }
+    }
+    return new ImageData(out, dw, dh);
+  }
+
+  // 裁剪成功后 / variant 渲染时做轻度锐化：只有小尺寸 (<512px max 边) 才做，避免大图画蛇添足
+  window.mildSharpenIfSmall = function(ctx, w, h, maxSide = 512) {
+    if (Math.max(w, h) > maxSide) return null;
+    try {
+      const id = ctx.getImageData(0, 0, w, h);
+      return applyLaplacian(id, 0.25);
+    } catch (e) { return null; }
+  };
+
+  // 主入口：根据"排版字号 fontSize"决定要不要超分；不需要就原封返回
+  window.upscaleVariant = async function(srcDataURL, fontSizePx = 32) {
+    if (!srcDataURL || typeof srcDataURL !== 'string' || !srcDataURL.startsWith('data:image/')) return srcDataURL;
+    // 解码 src，拿到真实 natural 尺寸
+    let img;
+    try {
+      const im = new Image();
+      img = await new Promise((resolve, reject) => {
+        im.onload = () => resolve(im);
+        im.onerror = () => reject(new Error('img decode'));
+        im.src = srcDataURL;
+      });
+    } catch(_) { return srcDataURL; }
+    const nw = img.naturalWidth || 1, nh = img.naturalHeight || 1;
+    const target = Math.max(40, Math.round(1.6 * (Number(fontSizePx) || 32))); // 目标 ≈ 字号的 1.6×（DPR 2 高清排版下限）
+    // 短边达到目标 ≥ 目标 1.1× 就不超分，直接过（防止过度锐化）
+    const shortEdge = Math.min(nw, nh);
+    if (shortEdge >= target * 1.1) return srcDataURL;
+    // LRU cache：key = dataURL 前缀（dataURL 前 60 字节几乎已唯一）+ 字号
+    const key = String(srcDataURL).slice(0, 72) + '|' + target;
+    const cached = lruMap.get(key);
+    if (cached) return cached;
+
+    // 整数倍放大：k = ceil(target / shortEdge)，限制 3 倍上限 & 单字 ≤1024
+    let k = Math.max(1, Math.ceil(target / shortEdge));
+    k = Math.min(3, k, Math.max(1, Math.floor(1024 / Math.max(nw, nh))));
+    if (k <= 1) return srcDataURL;
+    const dw = nw * k, dh = nh * k;
+    // Step A：drawImage 到临时 canvas（只是"占位"，保证尺寸），之后立刻 getImageData
+    const cv = document.createElement('canvas');
+    cv.width = nw; cv.height = nh;
+    const c = cv.getContext('2d');
+    c.drawImage(img, 0, 0, nw, nh);
+    let id;
+    try { id = c.getImageData(0, 0, nw, nh); } catch(_) { return srcDataURL; }
+    // Step B：Lanczos3 k× 超分
+    const up = lanczos3Scale(id.data, nw, nh, k);
+    // Step C：线性对比度拉伸（去纸黄脏白+让黑字更黑）
+    const stretched = linearStretch(new ImageData(up, dw, dh), 0.008);
+    // Step D：Laplacian 锐化 0.30（宣纸字不是太毛，适度锐化）
+    const sharp = applyLaplacian(stretched, 0.30);
+
+    // 写出最终 PNG dataURL
+    const outCv = document.createElement('canvas');
+    outCv.width = dw; outCv.height = dh;
+    const octx = outCv.getContext('2d');
+    octx.putImageData(sharp, 0, 0);
+    let outURL;
+    try {
+      outURL = outCv.toDataURL('image/png');
+    } catch(_) { return srcDataURL; }
+    if (!outURL || !outURL.startsWith('data:image/')) return srcDataURL;
+    lruMap.set(key, outURL);
+    return outURL;
+  };
+})();
+
+// ===== 字图获取（字库中无对应字时，返回 null 由楷体兜底）=====
+function getCharVariantImg(ch, seedIndex = 0) {
+  const vars = state.library[ch];
+  if (!vars || vars.length === 0) return null;
+  return vars[seedIndex % vars.length];
+}
+// 预加载所有会用到的字图（确保导出 Canvas 不会空白）
+function preloadImages(urls) {
+  return Promise.all(urls.map(url => new Promise((resolve) => {
+    const im = new Image();
+    im.onload = im.onerror = () => resolve(im);
+    im.src = url;
+  })));
+}
+
+// ===== 排版计算 =====
+// returns: array of {ch, x, y, w, h, imgUrl|null, textIdx}
+// textIdx = 该字在 createParams.text 里的 UTF-16 下标
+function layoutCharacters(pw, ph, params) {
+  const { text, layout, fontSize, letterSpace, lineSpace, bg } = params;
+  // 根据背景预留金边/白边安全距离（米黄 12.5%、米白 12%、custom 最小）
+  const side = Math.min(pw, ph);
+  let basePad;
+  if (bg === 'xuan')       basePad = Math.max(side * 0.125, fontSize * 0.60 + 10);
+  else if (bg === 'xuanwhite') basePad = Math.max(side * 0.12,  fontSize * 0.60 +  8);
+  else                       basePad = Math.max(14,            fontSize * 0.60 +  4);
+  const padding = Math.max(12, Math.floor(basePad));
+  const usableW = Math.max(1, pw - padding * 2);
+  const usableH = Math.max(1, ph - padding * 2);
+  const lines = text.split(/\r?\n/);
+
+  const chW = fontSize;
+  const chH = fontSize;
+  const result = [];
+  let globalTextIdx = 0;
+
+  if (layout === 'h') {
+    let cursorX = 0, cursorY = 0;
+    lines.forEach(line => {
+      const chars = Array.from(line);
+      chars.forEach((ch, i) => {
+        const baseX = padding + cursorX;
+        const baseY = padding + cursorY;
+        result.push({
+          ch,
+          textIdx: globalTextIdx,
+          x: baseX, y: baseY, w: chW, h: chH,
+          imgUrl: getCharVariantImg(ch, i)
+        });
+        cursorX += chW + letterSpace;
+        globalTextIdx += ch.length; // UTF-16 代理对按实际长度累加
+      });
+      cursorX = 0;
+      cursorY += chH + lineSpace;
+      globalTextIdx += 1;
+    });
+  } else {
+    // 竖排：从右向左；每列从上到下；换行 = 向左一列
+    const columns = lines.length ? lines : [''];
+    let cursorColRight = usableW - chW; // 从最右列开始（相对 padding 内）
+    columns.forEach(col => {
+      const chars = Array.from(col);
+      let cursorY = 0;
+      chars.forEach((ch, i) => {
+        const baseX = padding + cursorColRight;
+        const baseY = padding + cursorY;
+        result.push({
+          ch,
+          textIdx: globalTextIdx,
+          x: baseX, y: baseY, w: chW, h: chH,
+          imgUrl: getCharVariantImg(ch, i)
+        });
+        cursorY += chH + lineSpace;
+        globalTextIdx += ch.length;
+      });
+      cursorColRight -= (chW + letterSpace);
+      globalTextIdx += 1; // 换行符占位
+    });
+  }
+  return result;
+}
+
+// ===== DOM 渲染 paper（预览）=====
+function renderPaper() {
+  const rect = paper.getBoundingClientRect();
+  const pw = rect.width, ph = rect.height;
+  const items = layoutCharacters(pw, ph, state.createParams);
+  paperContent.innerHTML = '';
+  // 自定背景图的文字颜色不变（由用户保证图的对比度），但 xuan/xuanwhite 都默认墨色
+  const royal = state.createParams.bg === 'royal';
+  let maxRight = 0, maxBottom = 0;
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'paper-char' + (royal ? ' royal-text' : '');
+    el.style.left = item.x + 'px';
+    el.style.top = item.y + 'px';
+    el.style.width = item.w + 'px';
+    el.style.height = item.h + 'px';
+    // 记录供下一层调试/扩展（无逐字微调，保留 textIdx 便于日志对齐）
+    el.dataset.textIdx = String(item.textIdx);
+    el.dataset.ch = item.ch;
+    if (item.imgUrl) {
+      const img = document.createElement('img');
+      img.src = item.imgUrl;
+      img.alt = item.ch;
+      img.style.pointerEvents = 'none';
+      el.appendChild(img);
+    } else {
+      el.style.fontSize = item.h + 'px';
+      el.style.fontFamily = '"KaiTi", "STKaiti", "楷体", "Noto Serif SC", serif';
+      el.style.fontWeight = '700';
+      el.style.lineHeight = '1';
+      el.textContent = item.ch;
+    }
+    paperContent.appendChild(el);
+    maxRight = Math.max(maxRight, item.x + item.w);
+    maxBottom = Math.max(maxBottom, item.y + item.h);
+  });
+  // 判断文案是否超出宣纸可见区：超出则显示展开/下拉按钮
+  const overflowY = maxBottom > (ph - 40 * 2) + 4; // padding *2 以内留 4px 容差
+  const overflowX = maxRight > (pw - 40 * 2) + 4;
+  const tooLong = !!(state.createParams.text) && (overflowY || overflowX || state.createParams.text.length > 40);
+  const btn = $('#paper-toggle');
+  if (btn) btn.classList.toggle('show', !!tooLong);
+  updatePaperToggleLabel();
+}
+
+function updatePaperToggle() {
+  const btn = $('#paper-toggle');
+  if (!btn) return;
+  const expanded = paper.classList.contains('expanded');
+  const ic = btn.querySelector('.paper-toggle-ic');
+  if (ic) ic.textContent = expanded ? '⬆️' : '⬇️';
+  updatePaperToggleLabel();
+}
+function updatePaperToggleLabel() {
+  const btn = $('#paper-toggle');
+  if (!btn) return;
+  const txt = btn.querySelector('.paper-toggle-text');
+  if (txt) txt.textContent = paper.classList.contains('expanded') ? '收起' : '展开';
+}
+
+// ===== 保存作品 + 下载高清（Canvas 2x DPR）=====
+async function renderToHiResCanvas() {
+  const rect = paper.getBoundingClientRect();
+  const baseW = rect.width, baseH = rect.height;
+  const DPR = 2;
+  const out = document.createElement('canvas');
+  out.width = Math.round(baseW * DPR);
+  out.height = Math.round(baseH * DPR);
+  const c = out.getContext('2d');
+  c.scale(DPR, DPR);
+  c.imageSmoothingQuality = 'high';
+
+  // 预加载：单字图 + 自定义背景图
+  const items = layoutCharacters(baseW, baseH, state.createParams);
+  const imgUrls = items.map(i => i.imgUrl).filter(Boolean);
+  const bg = state.createParams.bg;
+  let userBgImg = null;
+  if (bg === 'custom' && state.userBackgroundDataURL) {
+    userBgImg = (await preloadImages([state.userBackgroundDataURL]))[0];
+  }
+
+  // Step 1: Draw background
+  await drawBackground(c, baseW, baseH, bg, userBgImg);
+
+  // Preload char images (确保不会空白)
+  const imgMap = new Map();
+  if (imgUrls.length) {
+    const loaded = await preloadImages(imgUrls);
+    imgUrls.forEach((u, i) => imgMap.set(u, loaded[i]));
+  }
+
+  // Step 3: Draw each character
+  const royal = bg === 'royal';
+  items.forEach(item => {
+    if (item.imgUrl && imgMap.has(item.imgUrl) && imgMap.get(item.imgUrl).complete && imgMap.get(item.imgUrl).naturalWidth > 0) {
+      const img = imgMap.get(item.imgUrl);
+      // 保持透明单字图
+      c.drawImage(img, item.x, item.y, item.w, item.h);
+    } else {
+      // 楷体兜底
+      c.save();
+      c.font = `700 ${item.h}px "KaiTi","STKaiti","楷体","Noto Serif SC","Source Han Serif SC",serif`;
+      c.fillStyle = royal ? '#f2d47a' : '#2c241b';
+      c.textBaseline = 'top';
+      c.textAlign = 'left';
+      // 水平+垂直居中 (近似)
+      const metrics = c.measureText(item.ch);
+      const w = metrics.width;
+      c.fillText(item.ch, item.x + (item.w - w) / 2, item.y + (item.h - item.h * 0.92) / 2 - item.h * 0.04);
+      c.restore();
+    }
+  });
+  return out;
+}
+
+// 同步绘制：米黄/米白都是 Canvas 自绘，无需 await 内置图；custom 仍然是异步（等待用户图 decode）
+async function drawBackground(c, w, h, bg, userBgImg) {
+  c.save();
+
+  // object-fit: cover 工具（仅 custom 背景使用）
+  const drawCover = (img) => {
+    if (!img || !img.complete || !img.naturalWidth) return false;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const r = Math.max(w / iw, h / ih);
+    const dw = iw * r, dh = ih * r;
+    const dx = (w - dw) / 2, dy = (h - dh) / 2;
+    c.drawImage(img, dx, dy, dw, dh);
+    return true;
+  };
+
+  if (bg === 'xuan') {
+    // ==== 宣纸·米黄（生宣 · 御制祥云金框版，与 CSS 同算法）====
+    // 1) 米黄底色（多层渐变晕染）
+    const base = c.createLinearGradient(0, 0, w, h);
+    base.addColorStop(0, '#faecc6');
+    base.addColorStop(0.48, '#f4dca3');
+    base.addColorStop(1, '#eccb83');
+    c.fillStyle = base; c.fillRect(0, 0, w, h);
+    const g1 = c.createRadialGradient(w*0.14, h*0.12, Math.min(w,h)*0.04, w*0.14, h*0.12, Math.max(w,h)*0.6);
+    g1.addColorStop(0, 'rgba(222,178,108,0.42)');
+    g1.addColorStop(1, 'rgba(222,178,108,0)');
+    c.fillStyle = g1; c.fillRect(0,0,w,h);
+    const g2 = c.createRadialGradient(w*0.86, h*0.88, Math.min(w,h)*0.04, w*0.86, h*0.88, Math.max(w,h)*0.6);
+    g2.addColorStop(0, 'rgba(206,152,82,0.32)');
+    g2.addColorStop(1, 'rgba(206,152,82,0)');
+    c.fillStyle = g2; c.fillRect(0,0,w,h);
+    const g3 = c.createRadialGradient(w*0.86, h*0.10, Math.min(w,h)*0.05, w*0.86, h*0.10, Math.max(w,h)*0.55);
+    g3.addColorStop(0, 'rgba(216,166,90,0.22)');
+    g3.addColorStop(1, 'rgba(216,166,90,0)');
+    c.fillStyle = g3; c.fillRect(0,0,w,h);
+    const g4 = c.createRadialGradient(w*0.14, h*0.90, Math.min(w,h)*0.05, w*0.14, h*0.90, Math.max(w,h)*0.55);
+    g4.addColorStop(0, 'rgba(216,166,90,0.22)');
+    g4.addColorStop(1, 'rgba(216,166,90,0)');
+    c.fillStyle = g4; c.fillRect(0,0,w,h);
+    const g5 = c.createRadialGradient(w*0.5, h*0.5, Math.min(w,h)*0.1, w*0.5, h*0.5, Math.max(w,h)*0.7);
+    g5.addColorStop(0, 'rgba(255,244,214,0.85)');
+    g5.addColorStop(1, 'rgba(255,244,214,0)');
+    c.fillStyle = g5; c.fillRect(0,0,w,h);
+
+    // 2) 帘纹
+    c.save();
+    c.globalAlpha = 0.7;
+    c.fillStyle = 'rgba(140,100,45,0.06)';
+    for (let x = 0; x < w; x += 6) c.fillRect(x, 0, 1, h);
+    c.restore();
+
+    // 3) 纤维暗斑（确定性散点）
+    drawRiceSpecks(c, w, h, 0.92, 'rgba(135,90,30,0.20)', 'rgba(155,105,45,0.12)');
+
+    // 4) 四角祥云（金描），按尺寸自适应缩放
+    drawCloudPattern(c, w, h, Math.max(w, h), 'xuan');
+
+    // 5) 双层金边（外细 内粗）
+    drawDoubleGoldFrame(c, w, h);
+
+    // 6) 撒金（小圆点 + 不规则碎金）
+    drawGoldSplatter(c, w, h);
+
+  } else if (bg === 'xuanwhite') {
+    // ==== 宣纸·米白（熟宣 · 祥云冰裂版）====
+    // 1) 米白底色
+    const base = c.createLinearGradient(0, 0, w, h);
+    base.addColorStop(0, '#faf8f1');
+    base.addColorStop(0.5, '#f4efe1');
+    base.addColorStop(1, '#ece4cd');
+    c.fillStyle = base; c.fillRect(0, 0, w, h);
+    const g1 = c.createRadialGradient(w*0.16, h*0.10, Math.min(w,h)*0.05, w*0.16, h*0.10, Math.max(w,h)*0.55);
+    g1.addColorStop(0, 'rgba(230,214,176,0.22)');
+    g1.addColorStop(1, 'rgba(230,214,176,0)');
+    c.fillStyle = g1; c.fillRect(0,0,w,h);
+    const g2 = c.createRadialGradient(w*0.84, h*0.90, Math.min(w,h)*0.05, w*0.84, h*0.90, Math.max(w,h)*0.55);
+    g2.addColorStop(0, 'rgba(220,200,160,0.20)');
+    g2.addColorStop(1, 'rgba(220,200,160,0)');
+    c.fillStyle = g2; c.fillRect(0,0,w,h);
+    const g5 = c.createRadialGradient(w*0.5, h*0.5, Math.min(w,h)*0.1, w*0.5, h*0.5, Math.max(w,h)*0.7);
+    g5.addColorStop(0, 'rgba(255,255,248,0.85)');
+    g5.addColorStop(1, 'rgba(255,255,248,0)');
+    c.fillStyle = g5; c.fillRect(0,0,w,h);
+
+    // 2) 帘纹
+    c.save();
+    c.globalAlpha = 0.55;
+    c.fillStyle = 'rgba(180,160,120,0.045)';
+    for (let x = 0; x < w; x += 7) c.fillRect(x, 0, 1, h);
+    c.restore();
+
+    // 3) 纤维散点
+    drawRiceSpecks(c, w, h, 0.6, 'rgba(150,120,70,0.14)', 'rgba(160,130,75,0.08)');
+
+    // 4) 四角淡祥云 + 全幅冰裂纹
+    drawCloudPattern(c, w, h, Math.max(w,h), 'xuanwhite');
+    drawIceCracks(c, w, h);
+
+    // 5) 米白双描边框
+    drawDoubleWhiteFrame(c, w, h);
+
+  } else if (bg === 'custom') {
+    // 用户上传背景图：优先传入已预加载的 userBgImg，否则回退米黄
+    if (userBgImg && userBgImg.complete && userBgImg.naturalWidth > 0) {
+      drawCover(userBgImg);
+      // 极薄米白遮罩，和 DOM 预览视觉统一
+      c.save();
+      c.globalAlpha = 0.10;
+      const ov = c.createLinearGradient(0, 0, w, h);
+      ov.addColorStop(0, 'rgba(255,252,240,0.75)');
+      ov.addColorStop(1, 'rgba(255,252,240,0)');
+      c.fillStyle = ov; c.fillRect(0,0,w,h);
+      c.restore();
+    } else {
+      // 兜底：回退米黄宣纸
+      c.restore();
+      return drawBackground(c, w, h, 'xuan', null);
+    }
+  }
+
+  // 边缘阴影（纸感）
+  c.save();
+  c.globalCompositeOperation = 'multiply';
+  const eg = c.createRadialGradient(w/2, h/2, Math.min(w,h)*0.4, w/2, h/2, Math.max(w,h)*0.75);
+  eg.addColorStop(0, 'rgba(0,0,0,0)');
+  eg.addColorStop(1, 'rgba(44,36,27,0.22)');
+  c.fillStyle = eg; c.fillRect(0, 0, w, h);
+  c.restore();
+  c.restore();
+}
+
+// （回退：参考图版本的 getBuiltinBgImg / 预解码已删除；xuan/xuanwhite 现在是代码自绘）
+
+// —— 祥云图（仿 SVG quadratic paths 画到 canvas） ——
+function drawCloudPattern(c, w, h, base, type) {
+  const isXuan = type === 'xuan';
+  // 线条色 & 粗细
+  const darkStroke = isXuan ? '#9c7118' : 'rgba(191,167,116,0.95)';
+  const stroke = isXuan ? '#c7992a' : 'rgba(191,167,116,0.75)';
+  const lightStroke = isXuan ? 'rgba(199,153,42,0.72)' : 'rgba(191,167,116,0.55)';
+  const faintStroke = isXuan ? 'rgba(199,153,42,0.52)' : 'rgba(191,167,116,0.4)';
+
+  // 祥云 scale：相对画布基准尺寸。SVG 设计宽 260（视口 600 宽）。
+  const scale = Math.max(0.45, Math.min(w, h) / 600) * 1.05;
+
+  // 单位祥云：按 quad control 数组绘制，(cx,cy,dx,dy) = 绘制基准点
+  function cloud(cx, cy, weight, strokeStyle, lineMult){
+    c.save();
+    c.translate(cx, cy);
+    c.scale(scale * weight, scale * weight);
+    c.strokeStyle = strokeStyle;
+    c.lineWidth = (lineMult || 1) * (isXuan ? 2 : 1.25);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // 祥云主朵（SVG path 拆分段：M→Q→Q...→Z 的逻辑路径）
+    c.beginPath();
+    c.moveTo(0,0);
+    c.quadraticCurveTo(16,-18, 40,-10);
+    c.quadraticCurveTo(50,-6, 48, 8);
+    c.quadraticCurveTo(46, 18, 34, 22);
+    c.quadraticCurveTo(20, 25,  8, 18);
+    c.moveTo(20, 32);
+    c.quadraticCurveTo(32, 46, 16, 52);
+    c.quadraticCurveTo(2,  58, -12, 46);
+    c.quadraticCurveTo(-16, 42, -10, 38);
+    c.moveTo(-24, 36);
+    c.quadraticCurveTo(-38, 34, -36, 20);
+    c.quadraticCurveTo(-35, 11, -26, 8);
+    c.moveTo(-32, 0);
+    c.quadraticCurveTo(-36, -14, -20, -18);
+    c.stroke();
+    c.restore();
+  }
+
+  function cloudSmall(cx, cy, weight, strokeStyle){
+    c.save();
+    c.translate(cx, cy);
+    c.scale(scale * weight, scale * weight);
+    c.strokeStyle = strokeStyle;
+    c.lineWidth = (isXuan ? 1.6 : 1.1);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath();
+    c.moveTo(0,0);
+    c.quadraticCurveTo(10,-10, 26,-4);
+    c.quadraticCurveTo(36,0, 32,12);
+    c.quadraticCurveTo(29,20, 14,22);
+    c.quadraticCurveTo(0,22, -6,12);
+    c.moveTo(6,22);
+    c.quadraticCurveTo(18,32, 0,34);
+    c.quadraticCurveTo(-10,34, -10,22);
+    c.stroke();
+    c.restore();
+  }
+
+  // 右上角主祥云
+  const margin = Math.min(w,h) * 0.035;
+  cloud(w * 0.74, h * 0.13, 1.0, stroke, 1.0);
+  cloud(w * 0.84, h * 0.23, 0.72, lightStroke, 0.9);
+  cloudSmall(w * 0.60, h * 0.18, 0.72, lightStroke);
+
+  // 左下角主祥云（镜像）
+  c.save();
+  c.translate(w * 0.26, h * 0.87);
+  c.scale(-1, -1);
+  c.translate(-w * 0.26, -h * 0.87);
+  cloud(w * 0.74, h * 0.13, 1.0, stroke, 1.0);
+  cloud(w * 0.84, h * 0.23, 0.72, lightStroke, 0.9);
+  cloudSmall(w * 0.60, h * 0.18, 0.72, lightStroke);
+  c.restore();
+
+  // 左上 / 右下（微淡，小号一朵）
+  cloudSmall(w * 0.08 + margin*0.3, h * 0.08 + margin*0.3, 0.80, faintStroke);
+  cloudSmall(w * 0.92 - margin*0.3, h * 0.92 - margin*0.3, 0.80, faintStroke);
+
+  // 米黄款：四角再加描深边，让祥云"压边框"效果更强（与示例图一致）
+  if (isXuan) {
+    // 边框角点：45°斜线金边小饰
+    c.save();
+    c.strokeStyle = darkStroke;
+    c.lineWidth = 2;
+    c.lineCap = 'round';
+    const mg = Math.min(w,h) * 0.05;
+    // 左上 L 饰
+    c.beginPath();
+    c.moveTo(mg*1.2, mg*0.4); c.lineTo(mg*1.2, mg*1.2); c.lineTo(mg*0.4, mg*1.2);
+    // 右上 L 饰
+    c.moveTo(w - mg*1.2, mg*0.4); c.lineTo(w - mg*1.2, mg*1.2); c.lineTo(w - mg*0.4, mg*1.2);
+    // 左下 L 饰
+    c.moveTo(mg*0.4, h - mg*1.2); c.lineTo(mg*1.2, h - mg*1.2); c.lineTo(mg*1.2, h - mg*0.4);
+    // 右下 L 饰
+    c.moveTo(w - mg*0.4, h - mg*1.2); c.lineTo(w - mg*1.2, h - mg*1.2); c.lineTo(w - mg*1.2, h - mg*0.4);
+    c.stroke();
+    c.restore();
+  }
+}
+
+// 双层金边（米黄款）
+function drawDoubleGoldFrame(c, w, h) {
+  c.save();
+  // 外层（偏浅亮金，细）
+  c.strokeStyle = '#e6c465';
+  c.lineWidth = 2;
+  c.strokeRect(1, 1, w - 2, h - 2);
+  // 内层（偏暗熟金，粗）
+  c.strokeStyle = '#b8891e';
+  c.lineWidth = 6;
+  c.strokeRect(8, 8, w - 16, h - 16);
+  // 金线内侧再勾一圈淡金，增加层次
+  c.strokeStyle = 'rgba(243,207,115,0.55)';
+  c.lineWidth = 2;
+  c.strokeRect(14, 14, w - 28, h - 28);
+  // 金色内晕
+  c.strokeStyle = 'rgba(199,153,42,0.10)';
+  c.lineWidth = 28;
+  c.strokeRect(8, 8, w - 16, h - 16);
+  c.restore();
+}
+
+// 双层米白描边（米白款）
+function drawDoubleWhiteFrame(c, w, h) {
+  c.save();
+  c.strokeStyle = '#ffffff';
+  c.lineWidth = 1;
+  c.strokeRect(0.5, 0.5, w - 1, h - 1);
+  c.strokeStyle = 'rgba(215,195,150,0.88)';
+  c.lineWidth = 3;
+  c.strokeRect(4, 4, w - 8, h - 8);
+  c.strokeStyle = 'rgba(215,195,150,0.22)';
+  c.lineWidth = 20;
+  c.strokeRect(4, 4, w - 8, h - 8);
+  c.restore();
+}
+
+// 撒金（米黄款）
+function drawGoldSplatter(c, w, h) {
+  const N = Math.max(80, Math.round(w * h / 1800));
+  const baseSeed = Math.floor(w * 7 + h * 13);
+  function rnd(i) {
+    let x = (baseSeed ^ (i * 1812433253)) >>> 0;
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    return ((x >>> 0) % 10000) / 10000;
+  }
+  c.save();
+  // 亮金（主颗粒）
+  for (let i = 0; i < N; i++) {
+    const x = rnd(i * 3 + 1) * w;
+    const y = rnd(i * 3 + 2) * h;
+    const t = rnd(i * 3 + 3);
+    if (t < 0.70) {
+      // 正圆金点
+      const r = 0.6 + rnd(i * 5 + 7) * 2.4;
+      const col = rnd(i * 7 + 11) < 0.5 ? '#f6d87c' : '#e6bd4a';
+      c.fillStyle = col;
+      c.globalAlpha = 0.88;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    } else if (t < 0.90) {
+      // 四角加稠的闪亮大星
+      const corners = [
+        [w*0.18, h*0.18],[w*0.82, h*0.18],[w*0.18, h*0.82],[w*0.82, h*0.82],
+        [w*0.50, h*0.50]
+      ];
+      const cp = corners[i % corners.length];
+      const dx = cp[0] + (rnd(i*11+13)-0.5) * Math.min(w,h) * 0.30;
+      const dy = cp[1] + (rnd(i*11+17)-0.5) * Math.min(w,h) * 0.30;
+      const r = 1.2 + rnd(i * 13 + 19) * 3.0;
+      c.fillStyle = '#fff3bc';
+      c.globalAlpha = 0.95;
+      c.beginPath(); c.arc(dx, dy, r, 0, Math.PI * 2); c.fill();
+      // 星芒
+      c.globalAlpha = 0.55;
+      c.strokeStyle = '#ffe9a8';
+      c.lineWidth = 0.6;
+      c.beginPath();
+      c.moveTo(dx - r*2.2, dy); c.lineTo(dx + r*2.2, dy);
+      c.moveTo(dx, dy - r*2.2); c.lineTo(dx, dy + r*2.2);
+      c.stroke();
+    } else {
+      // 长条形碎金
+      const ang = rnd(i*17+23) * Math.PI;
+      const len = 2 + rnd(i*19+29) * 6;
+      c.save();
+      c.translate(x, y); c.rotate(ang);
+      c.globalAlpha = 0.9;
+      c.fillStyle = '#e9c360';
+      c.fillRect(-len/2, -0.6, len, 1.2);
+      c.restore();
+    }
+  }
+  c.globalAlpha = 1;
+  c.restore();
+}
+
+// 冰裂纹（米白款）
+function drawIceCracks(c, w, h) {
+  c.save();
+  c.strokeStyle = 'rgba(191,167,116,0.55)';
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const SW = 600, SH = 600; // 基准尺寸
+  const sx = w / SW, sy = h / SH;
+  function line(x1,y1,x2,y2){ c.beginPath(); c.moveTo(x1*sx, y1*sy); c.lineTo(x2*sx, y2*sy); c.stroke(); }
+  const lines = [
+    [0,40,110,85],[110,85,200,50],[200,50,300,120],[300,120,390,90],[390,90,500,160],[500,160,600,120],
+    [0,210,90,180],[90,180,180,260],[180,260,290,220],[290,220,400,300],[400,300,520,260],[520,260,600,330],
+    [0,400,120,360],[120,360,240,440],[240,440,350,400],[350,400,460,480],[460,480,600,440],
+    [40,0,80,110],[80,110,20,230],[20,230,100,340],[100,340,60,470],[60,470,140,600],
+    [220,0,180,90],[180,90,260,180],[260,180,220,300],[220,300,300,410],[300,410,260,520],[260,520,340,600],
+    [420,0,380,120],[380,120,460,210],[460,210,420,330],[420,330,500,430],[500,430,460,530],[460,530,540,600],
+    [580,0,540,120],[540,120,600,230],[600,230,560,340],[560,340,600,450],
+    [120,50,70,140],[70,140,150,210],[150,210,120,310],[120,310,200,380],[200,380,160,490],
+    [300,70,240,170],[240,170,330,250],[330,250,290,360],[290,360,380,440],[380,440,330,550],
+    [480,60,430,160],[430,160,510,240],[510,240,480,360],[480,360,550,450]
+  ];
+  c.lineWidth = 1.0;
+  lines.forEach(seg => line(seg[0],seg[1],seg[2],seg[3]));
+  // 额外的小分支裂纹
+  for (let i = 0; i < lines.length; i += 2) {
+    const s = lines[i];
+    const mx = (s[0] + s[2]) * 0.5, my = (s[1] + s[3]) * 0.5;
+    const ang = Math.atan2(s[3] - s[1], s[2] - s[0]) + (i % 4 === 0 ? Math.PI / 3 : -Math.PI / 3);
+    const len = 30 + ((i * 37) % 40);
+    line(mx, my, mx + Math.cos(ang) * len, my + Math.sin(ang) * len);
+  }
+  c.restore();
+}
+
+// 画宣纸纤维与暗斑（确定性散点，不依赖 Math.random 以免每次导出不同）
+function drawRiceSpecks(c, w, h, alpha, darkRGBA, lightRGBA) {
+  // 用基于尺寸的密度 + 一个 seed 函数，保证同样画面每次渲染一致
+  const N = Math.max(40, Math.round(w * h / 9000));
+  const baseSeed = Math.floor(w * 13 + h * 7);
+  function rnd(i) {
+    // xorshift-like mini hash
+    let x = (baseSeed ^ (i * 2654435761)) >>> 0;
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    return ((x >>> 0) % 10000) / 10000;
+  }
+  c.save();
+  for (let i = 0; i < N; i++) {
+    const x = rnd(i * 3 + 1) * w;
+    const y = rnd(i * 3 + 2) * h;
+    const t = rnd(i * 3 + 3);
+    if (t < 0.55) {
+      // 小圆点暗斑
+      const r = 0.5 + rnd(i * 7 + 11) * 1.6;
+      c.fillStyle = darkRGBA;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    } else if (t < 0.85) {
+      // 短纤维
+      const ang = rnd(i * 11 + 17) * Math.PI;
+      const len = 2 + rnd(i * 13 + 19) * 6;
+      c.save();
+      c.translate(x, y);
+      c.rotate(ang);
+      c.fillStyle = lightRGBA;
+      c.fillRect(-len/2, -0.5, len, 1);
+      c.restore();
+    } else {
+      // 大一点的浅晕
+      const r = 1.5 + rnd(i * 17 + 23) * 3;
+      c.fillStyle = lightRGBA;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    }
+  }
+  c.globalAlpha = alpha;
+  c.restore();
+}
+
+$('#btn-save-work').addEventListener('click', async () => {
+  const txt = state.createParams.text ? state.createParams.text : '请输入你心中的文案';
+  const title = Array.from(txt).slice(0, 8).join('') || '无题';
+  const hiCanvas = await renderToHiResCanvas();
+  const thumb = hiCanvas.toDataURL('image/jpeg', 0.7);
+  const id = 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const paramsSnapshot = JSON.parse(JSON.stringify(state.createParams));
+  // —— BUGFIX：新作品绝对不能继承"之前打开过的老作品 params.bgBlobK"。
+  //   createParams.bgBlobK 是"某一次加载作品后"遗留下来的 workBg:OLD_ID，
+  //   如果不清理，新作品会把"其他作品专属的 bgBlobK"一起写进 params，
+  //   造成 saveWorks 把该键对应的数据 OVEWRITE（覆盖老作品真正的背景图 / 新作品存错键）
+  //   → 用户表象是："旧作品图被替换成新上传背景图 / 新作品保存后打开背景不对"。
+  //   清除后，saveWorks 读到 bg==='custom' 会重新分配 bgBlobK = 'workBg:' + thisWork.id（完全独立）
+  if (paramsSnapshot && typeof paramsSnapshot.bgBlobK === 'string') {
+    delete paramsSnapshot.bgBlobK;
+  }
+  const newWork = {
+    id, ts: Date.now(), title,
+    params: paramsSnapshot,
+    thumb
+  };
+  // custom 背景：新建作品时把"当时的 userBackgroundDataURL"挂到工作对象上
+  //   → saveWorks 读到就会独立写入 blobs.workBg:<id>，避免后续上传新图覆盖
+  if (paramsSnapshot.bg === 'custom') {
+    if (typeof state.userBackgroundDataURL === 'string' && state.userBackgroundDataURL.startsWith('data:image/')) {
+      newWork._bgDataURL = state.userBackgroundDataURL;
+      // 同时给新作品预留专属 bgBlobK（saveWorks 也会再次分配，提前写一份保证一致）
+      newWork.params.bgBlobK = 'workBg:' + id;
+    } else {
+      // 此时 custom 但没有真图数据，不允许强存 custom（防止白屏）→ 回退米黄
+      newWork.params.bg = 'xuan';
+    }
+  }
+  state.works.unshift(newWork);
+  // 限制作品数量（超限后删掉尾部最旧作品 + 连带 blobs）
+  if (state.works.length > 30) {
+    const overflow = state.works.splice(30);
+    for (const ow of overflow) {
+      if (ow && ow.params && ow.params.bgBlobK && typeof ow.params.bgBlobK === 'string' && ow.params.bgBlobK.startsWith('workBg:')) {
+        idbDel(IDB_STORE_BLOBS, ow.params.bgBlobK).catch(() => {});
+      }
+    }
+  }
+  await saveWorks();
+  renderWorksPanel();
+  showToast(`已保存作品：${title}`);
+});
+
+$('#btn-download').addEventListener('click', async () => {
+  try {
+    const btn = $('#btn-download');
+    const origText = btn.textContent;
+    btn.textContent = '⏳ 生成中...';
+    btn.disabled = true;
+    const hiCanvas = await renderToHiResCanvas();
+    hiCanvas.toBlob((blob) => {
+      if (!blob) { showToast('导出失败'); return; }
+      const a = document.createElement('a');
+      const title = (state.createParams.text || '心中的文案').slice(0, 10) || '大典集字';
+      a.href = URL.createObjectURL(blob);
+      a.download = `大典集字-${title}-${Date.now()}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      btn.textContent = origText;
+      btn.disabled = false;
+      showToast('作品已导出，若未下载请长按图片保存');
+    }, 'image/png');
+  } catch (err) {
+    showToast('导出失败：' + err.message);
+    $('#btn-download').textContent = '🖼️ 下载图片';
+    $('#btn-download').disabled = false;
+  }
+});
+
+// ============================================================
+//  4. 作品集下拉面板
+// ============================================================
+function renderWorksPanel() {
+  const grid = $('#works-grid');
+  const empty = $('#works-empty');
+  grid.innerHTML = '';
+  empty.style.display = state.works.length ? 'none' : 'block';
+  if (!state.works.length) return;
+  const frag = document.createDocumentFragment();
+  state.works.forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'work-item';
+    el.dataset.id = w.id;
+    el.innerHTML = `
+      <button class="work-del" data-action="del-work" data-id="${w.id}" title="删除">×</button>
+      <img src="${w.thumb}" alt="${escapeAttr(w.title)}" />
+      <div class="work-label">${escapeHtml(w.title)}</div>
+    `;
+    frag.appendChild(el);
+  });
+  grid.appendChild(frag);
+}
+// Open / close panel
+$('#btn-works').addEventListener('click', (e) => {
+  e.stopPropagation();
+  renderWorksPanel();
+  $('#works-panel').classList.toggle('open');
+});
+// 点击外区关闭
+document.addEventListener('click', (e) => {
+  const panel = $('#works-panel');
+  if (!panel.classList.contains('open')) return;
+  if (!panel.contains(e.target) && e.target.id !== 'btn-works') {
+    panel.classList.remove('open');
+  }
+});
+// 事件委托：加载作品 / 删除作品
+$('#works-grid').addEventListener('click', (e) => {
+  const delBtn = e.target.closest('[data-action="del-work"]');
+  if (delBtn) {
+    e.stopPropagation();
+    const id = delBtn.dataset.id;
+    if (confirm('删除该作品？')) {
+      // 删除作品前先清理其独立保存的 custom 背景图（如果存在），避免 blobs 表留垃圾
+      const target = state.works.find(x => x.id === id);
+      if (target && target.params && target.params.bgBlobK
+          && typeof target.params.bgBlobK === 'string'
+          && target.params.bgBlobK.startsWith('workBg:')) {
+        idbDel(IDB_STORE_BLOBS, target.params.bgBlobK).catch(() => {});
+      }
+      state.works = state.works.filter(w => w.id !== id);
+      saveWorks();
+      renderWorksPanel();
+    }
+    return;
+  }
+  const item = e.target.closest('.work-item');
+  if (!item) return;
+  const w = state.works.find(x => x.id === item.dataset.id);
+  if (!w) return;
+  const loadedParams = JSON.parse(JSON.stringify(w.params));
+  // 旧版逐字微调字段（本轮已彻底删除）：兼容读取后清理，避免参数里留着旧的 charOverrides 脏数据
+  if ('charOverrides' in loadedParams) delete loadedParams.charOverrides;
+  state.createParams = loadedParams;
+
+  // 异步收尾：custom 背景单独恢复数据 → syncBackground → refresh
+  (async () => {
+    let bgMsg = '';
+    // ——— 判定：该作品是否属于「独立保存过 custom 背景图」。
+    // 修正 V3：**绝不**用全局 state.userBackground 作为"是否 treatAsCustom 或兜底恢复"的依据，
+    //   因为 userBackground = 创作页最后一次上传的图，和老作品 A 的自定义背景毫无关系；
+    //   之前用它兜底会造成：作品 A 当年自定义了图A → 后来用户上传新图B → 打开作品 A 却看到了图B（严重错串）。
+    //   仅当作品自己真的有独立数据（三种：params.bgBlobK / blobs 键 workBg:<w.id> / 会话内存 w._bgDataURL）才按 custom 打开；
+    //   如果独立数据缺失了，统一走 normalizeBg(rawBg)，让『bg=xuanwhite 的老作品就回米白；bg=royal/letter 旧值也归到正确宣纸』
+    const rawBg = (state.createParams && state.createParams.bg) ? state.createParams.bg : '';
+    const hasBgBlobKInParams = !!(loadedParams.bgBlobK
+      && typeof loadedParams.bgBlobK === 'string'
+      && loadedParams.bgBlobK.startsWith('workBg:'));
+    // 兜底探测：即使 params 没 bgBlobK 字段，也查一次 blobs 里 workBg:<workId> 是否存在（上轮迁移偶尔失败的场景）
+    let recoveredBlobFallback = null;
+    if (!hasBgBlobKInParams) {
+      try {
+        const probe = await idbGet(IDB_STORE_BLOBS, 'workBg:' + w.id);
+        if (probe && typeof probe.dataURL === 'string' && probe.dataURL.startsWith('data:image/')) {
+          recoveredBlobFallback = probe.dataURL;
+          loadedParams.bgBlobK = 'workBg:' + w.id;
+          state.createParams.bgBlobK = loadedParams.bgBlobK;
+        }
+      } catch(_) {}
+    }
+    const hasInSessionMemBg = typeof w !== 'undefined' && typeof w._bgDataURL === 'string' && w._bgDataURL.startsWith('data:image/');
+    // 真正作品私有 custom 图的信号：三档命中其一
+    const hasOwnCustomImage = !!(hasBgBlobKInParams || recoveredBlobFallback || hasInSessionMemBg);
+
+    // —— treatAsCustom = 作品自己明确存着 custom 背景 = (a) bg=custom 且有私有图；(b) bg 其它奇怪值但有私有图
+    const treatAsCustom = (rawBg === 'custom' && hasOwnCustomImage)
+      || (typeof rawBg === 'string' && rawBg !== 'xuan' && rawBg !== 'xuanwhite' && hasOwnCustomImage);
+
+    if (treatAsCustom) {
+      state.createParams.bg = 'custom';
+      loadedParams.bg = 'custom';
+
+      let recovered = null;
+      // 优先：params.bgBlobK 明确 → idbGet
+      if (loadedParams.bgBlobK && typeof loadedParams.bgBlobK === 'string' && loadedParams.bgBlobK.startsWith('workBg:')) {
+        try {
+          const blobRec = await idbGet(IDB_STORE_BLOBS, loadedParams.bgBlobK);
+          if (blobRec && typeof blobRec.dataURL === 'string' && blobRec.dataURL.startsWith('data:image/')) {
+            recovered = blobRec.dataURL;
+          }
+        } catch(_) {}
+      }
+      // 兜底 1：没 bgBlobK 但 probe 命中 workBg:w.id（缺失字段场景）
+      if (!recovered && recoveredBlobFallback) recovered = recoveredBlobFallback;
+      // 兜底 2：会话内存 w._bgDataURL （会话内刚保存还未落盘，或用户刚刚修改但没保存的临时）
+      if (!recovered && hasInSessionMemBg) recovered = w._bgDataURL;
+
+      if (recovered) {
+        // 注意：**不写入全局 userBackground**，
+        //   防止"打开作品A时把它的背景图顶替成『创作页最后一次上传背景图』"。
+        //   为了让用户编辑后立刻保存不会白屏，我们只把数据写回"该作品的 _bgDataURL / params.bgBlobK 对应 blobs 键"。
+        state.userBackgroundDataURL = recovered; // 只在本次会话使用（syncBackground 注入自定义背景图必需的内存字段）
+        try {
+          // 把这个作品自己的数据重新落盘一次（如果之前 probe 命中就已存在，覆盖不会错；否则新建 bgBlobK 对应键）
+          if (loadedParams.bgBlobK && typeof loadedParams.bgBlobK === 'string' && loadedParams.bgBlobK.startsWith('workBg:')) {
+            await idbPut(IDB_STORE_BLOBS, { k: loadedParams.bgBlobK, dataURL: recovered, ts: Date.now(), wid: w.id });
+          }
+          if (typeof w !== 'undefined') w._bgDataURL = recovered;
+        } catch(_) {}
+      } else {
+        // 自己的 private 图兜底三档全失败：回退 normalizeBg（不再默认米黄）
+        const fallbackBg = normalizeBg(rawBg);
+        state.createParams.bg = fallbackBg;
+        delete state.createParams.bgBlobK;
+        bgMsg = `（原自定义背景图已丢失，已回退${fallbackBg === 'xuanwhite' ? '米白宣纸' : '米黄宣纸'}）`;
+      }
+    } else {
+      // 非 custom 作品：bg 值（包括 xuan / xuanwhite / royal / letter）走 normalizeBg 规范化，
+      //   royal→xuan，letter→xuanwhite，非法→xuan，保证老作品也"按当年原始背景宣纸打开"（不是全部被替换成新上传的 custom 图）
+      state.createParams.bg = normalizeBg(rawBg);
+      delete state.createParams.bgBlobK; // 非 custom 不带 bgBlobK（下一次 saveWorks 也会清理）
+    }
+    saveLastCreate();
+    syncCreateUIFromState();
+    syncBackground();
+    renderPaper();
+    $('#works-panel').classList.remove('open');
+    switchPage('create');
+    showToast(`已加载「${w.title}」${bgMsg}`);
+  })().catch(err => {
+    // 极端异常兜底：至少把文字/布局渲染出来，提示用户
+    saveLastCreate();
+    syncCreateUIFromState();
+    syncBackground();
+    renderPaper();
+    $('#works-panel').classList.remove('open');
+    switchPage('create');
+    showToast(`作品加载完成（背景异常：${err && err.message ? err.message : err}）`);
+  });
+});
+
+// ===== 宣纸展开 / 收起 切换 =====
+$('#paper-toggle').addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  paper.classList.toggle('expanded');
+  state.createParams._paperExpanded = paper.classList.contains('expanded');
+  saveLastCreate();
+  updatePaperToggle();
+  // 过渡结束后重新渲染，让布局重新基于新的宣纸尺寸
+  setTimeout(() => {
+    renderPaper();
+  }, 260);
+});
+
+// ============================================================
+//  初始化
+// ============================================================
+// 背景枚举白名单 + 旧值迁移
+function normalizeBg(bg) {
+  if (bg === 'xuan' || bg === 'xuanwhite' || bg === 'custom') return bg;
+  // 已被弃用的旧值：'letter' 更接近米白熟宣；'royal' → 回退默认米黄
+  if (bg === 'letter') return 'xuanwhite';
+  return 'xuan';
+}
+
+async function init() {
+  // W1：init 默认打开采集页，采集页副标题大字强制 fit 一行
+  requestAnimationFrame(() => fitSubtitleLine());
+
+  // 先同步小容量 localStorage（立即可用的 UI 草稿）+ 背景迁移
+  loadLastCreate();
+  // 旧版本逐字微调字段 charOverrides（本轮删除）：如果 LSLastCreate 里带了，就从 state.createParams 里清掉
+  if (state.createParams && 'charOverrides' in state.createParams) delete state.createParams.charOverrides;
+  state.createParams.bg = normalizeBg(state.createParams.bg);
+
+  // 恢复用户自定义创作背景图（必须在 syncBackground 之前）
+  try { await loadUserBackground(); } catch(e){}
+  // 若 bg=custom 但当前无用户背景图数据 → 自动回退米黄，避免纯白
+  if (state.createParams.bg === 'custom' && !state.userBackgroundDataURL) {
+    state.createParams.bg = 'xuan';
+  }
+  saveLastCreate();
+
+  syncCreateUIFromState();
+  updatePaperToggle();
+
+  // 动态调整 header/main 偏移
+  const syncHeaderOffset = () => {
+    fitSubtitleLine();
+    const headerH = Math.ceil($('#header').getBoundingClientRect().height || 84);
+    $('#main').style.top = headerH + 'px';
+  };
+  syncHeaderOffset();
+
+  // 读取持久化大字库/作品（IDB 为主）— 异步加载，等完成再刷新 UI
+  try { await loadLibrary(); } catch(e){}
+  try {
+    await loadWorks();
+    // 旧作品 bg 值兼容迁移（不修改用户原作品 id，只规范化 params.bg 字段）
+    state.works.forEach(w => {
+      if (w && w.params && typeof w.params.bg === 'string') {
+        w.params.bg = normalizeBg(w.params.bg);
+      }
+    });
+    // —— 旧 custom 作品背景补齐：本轮前作品 bg='custom' 但还没有独立 bgBlobK 的，
+    //     只要当前"最后一次上传的背景图"存在（blobs.userBackground）就重建一份 workBg:<id>，
+    //     保证"作品集以前上传的背景依然显示 & 修改保存回写"——
+    //     若当前全局 userBackground 丢失，则仍交给作品加载时的三级兜底/回退米黄。
+    const existingBlobKs = new Set();
+    try {
+      const all = await idbAll(IDB_STORE_BLOBS);
+      for (const b of all || []) { if (b && typeof b.k === 'string') existingBlobKs.add(b.k); }
+    } catch(_) {}
+    if (typeof state.userBackgroundDataURL === 'string' && state.userBackgroundDataURL.startsWith('data:image/')) {
+      const pendingPuts = [];
+      for (const w of state.works) {
+        if (!w || !w.params || w.params.bg !== 'custom') continue;
+        const blobK = (w.params.bgBlobK && typeof w.params.bgBlobK === 'string' && w.params.bgBlobK.startsWith('workBg:'))
+          ? w.params.bgBlobK
+          : ('workBg:' + w.id);
+        if (w.params.bgBlobK !== blobK) w.params.bgBlobK = blobK;
+        if (!existingBlobKs.has(blobK)) {
+          pendingPuts.push(idbPut(IDB_STORE_BLOBS, { k: blobK, dataURL: state.userBackgroundDataURL, ts: Date.now(), wid: w.id }).catch(() => false));
+          existingBlobKs.add(blobK);
+        }
+      }
+      if (pendingPuts.length) Promise.all(pendingPuts).catch(() => {});
+    }
+    // 顺手把规范化 + 补齐 bgBlobK 的结果写回存储（asyncAck=false 静默）
+    saveWorks(false);
+  } catch(e){}
+  renderLibrary();
+  renderWorksPanel();
+
+  // 同步上传背景按钮底部小字提示
+  const hint = $('#bg-custom-hint');
+  if (hint) hint.textContent = state.userBackgroundDataURL ? '点此更换' : '点此选图';
+
+  // 恢复最后一次上传的古籍原图（如果存在）
+  try {
+    const savedBlob = await idbGet(IDB_STORE_BLOBS, 'lastSourceImage');
+    let viewInfo = null;
+    try {
+      const raw = localStorage.getItem(LS_SOURCE_VIEW);
+      viewInfo = raw ? JSON.parse(raw) : null;
+    } catch(e) { viewInfo = null; }
+    if (savedBlob && savedBlob.dataURL) {
+      try {
+        const img = await loadImageFromDataURL(savedBlob.dataURL);
+        state.image = img;
+        state.lastSourceDataURL = savedBlob.dataURL;
+        if (viewInfo && typeof viewInfo === 'object') {
+          if (typeof viewInfo.rotation === 'number') state.rotation = viewInfo.rotation;
+        }
+        $('#collect-empty').style.display = 'none';
+        $('#collect-editor').style.display = 'flex';
+        resizeCollectCanvas();
+        setTimeout(() => {
+          resizeCollectCanvas();
+          if (viewInfo && typeof viewInfo === 'object' && typeof viewInfo.scale === 'number') {
+            // 恢复视图：若 scale 在合理范围就直接恢复，否则自适应
+            let s = viewInfo.scale;
+            let ox = viewInfo.offsetX;
+            let oy = viewInfo.offsetY;
+            if (!(s > 0 && s <= 10 && typeof ox === 'number' && typeof oy === 'number')) {
+              fitImageToCanvas();
+            } else {
+              state.scale = s;
+              state.offsetX = ox;
+              state.offsetY = oy;
+              drawCollectCanvas();
+            }
+          } else {
+            fitImageToCanvas();
+          }
+        }, 50);
+      } catch(e) { /* 图片损坏就不恢复 */ }
+    }
+  } catch(e){}
+
+  // Initialize canvas size after layout
+  const doLayout = () => {
+    syncHeaderOffset();
+    resizeCollectCanvas();
+    renderPaper();
+  };
+  setTimeout(doLayout, 80);
+  // 图片字体加载完再次刷新布局，避免尺寸抖动
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { setTimeout(doLayout, 40); fitSubtitleLine(); }).catch(()=>{});
+  }
+  window.addEventListener('resize', () => setTimeout(()=>{ doLayout(); fitSubtitleLine(); }, 100));
+  // 部分输入法弹出/收起会改变可视高度，刷新 canvas + paper 排版
+  window.addEventListener('orientationchange', () => setTimeout(()=>{ doLayout(); fitSubtitleLine(); }, 200));
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => setTimeout(doLayout, 120));
+  }
+}
+let __inited = false;
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!__inited) { __inited = true; await init(); }
+});
+// Fallback in case DOMContentLoaded already fired
+if (document.readyState !== 'loading' && !__inited) { __inited = true; init(); }
+
+})();
+
+// Service Worker 注册 - 离线缓存
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('service-worker.js').catch(function(err) {
+      console.log('SW registration failed:', err);
+    });
+  });
+}
+</script>
 </body>
 </html>
